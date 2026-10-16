@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 interface GuidedTourModalProps {
   isOpen: boolean;
@@ -132,6 +133,8 @@ const getTourSteps = (caseId: number): TourStep[] => [
 
 export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClose }) => {
   const { updateOnboardingStatus } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -450,74 +453,63 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
 
   const defaultPos = computeDefaultPosition();
 
-  const rawRenderLeft = dragOffset ? defaultPos.left + dragOffset.x : defaultPos.left;
-  const rawRenderTop = dragOffset ? defaultPos.top + dragOffset.y : defaultPos.top;
+  let cardLeft = defaultPos.left;
+  let cardTop = defaultPos.top;
 
-  const finalRenderLeft = Math.max(margin, Math.min(rawRenderLeft, winW - cardW - margin));
-  const finalRenderTop = Math.max(margin, Math.min(rawRenderTop, winH - cardH - margin));
+  // Viewport bounds clamping
+  cardLeft = Math.max(margin, Math.min(cardLeft, winW - cardW - margin));
+  cardTop = Math.max(margin, Math.min(cardTop, winH - cardH - margin));
 
-  // Global window pointer listeners while actively dragging (UNCONDITIONALLY CALLED WITH ALL HOOKS)
-  useEffect(() => {
-    if (!isDragging) return;
+  // Apply user drag offset if active
+  if (dragOffset) {
+    cardLeft = Math.max(margin, Math.min(cardLeft + dragOffset.x, winW - cardW - margin));
+    cardTop = Math.max(margin, Math.min(cardTop + dragOffset.y, winH - cardH - margin));
+  }
 
-    const handlePointerMove = (e: PointerEvent) => {
-      if (!dragStartRef.current) return;
-
-      const deltaX = e.clientX - dragStartRef.current.pointerX;
-      const deltaY = e.clientY - dragStartRef.current.pointerY;
-
-      const proposedLeft = dragStartRef.current.startLeft + deltaX;
-      const proposedTop = dragStartRef.current.startTop + deltaY;
-
-      const boundedLeft = Math.max(margin, Math.min(proposedLeft, winW - cardW - margin));
-      const boundedTop = Math.max(margin, Math.min(proposedTop, winH - cardH - margin));
-
-      setDragOffset({
-        x: boundedLeft - defaultPos.left,
-        y: boundedTop - defaultPos.top
-      });
-    };
-
-    const handlePointerUp = () => {
-      setIsDragging(false);
-      dragStartRef.current = null;
-    };
-
-    window.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerup', handlePointerUp);
-    window.addEventListener('pointercancel', handlePointerUp);
-
-    return () => {
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerUp);
-      window.removeEventListener('pointercancel', handlePointerUp);
-    };
-  }, [isDragging, winW, winH, cardW, cardH, margin, defaultPos.left, defaultPos.top]);
-
-  // Pointer Down handler on the header area
-  const handleHeaderPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest('button')) {
-      return;
-    }
-
-    if (e.button !== 0 && e.pointerType === 'mouse') {
-      return;
-    }
-
+  // Drag handling with pointer capture (exact match with consumer portal)
+  const handlePointerDown = (e: React.PointerEvent) => {
     e.preventDefault();
-    setIsDragging(true);
+    const cardEl = cardRef.current;
+    if (!cardEl) return;
 
+    const rect = cardEl.getBoundingClientRect();
     dragStartRef.current = {
       pointerX: e.clientX,
       pointerY: e.clientY,
-      startLeft: finalRenderLeft,
-      startTop: finalRenderTop
+      startLeft: rect.left,
+      startTop: rect.top
     };
-
+    setIsDragging(true);
     try {
-      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
     } catch {
-      // fallback
+      // silent
+    }
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging || !dragStartRef.current) return;
+    const dx = e.clientX - dragStartRef.current.pointerX;
+    const dy = e.clientY - dragStartRef.current.pointerY;
+
+    setDragOffset(prev => ({
+      x: (prev?.x || 0) + dx,
+      y: (prev?.y || 0) + dy
+    }));
+
+    dragStartRef.current.pointerX = e.clientX;
+    dragStartRef.current.pointerY = e.clientY;
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (isDragging) {
+      setIsDragging(false);
+      dragStartRef.current = null;
+      try {
+        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+      } catch {
+        // silent
+      }
     }
   };
 
@@ -648,10 +640,12 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
       {/* 2. Draggable, Viewport-Clamped Tour Panel Card */}
       <div
         ref={cardRef}
+        role="dialog"
+        aria-label={`Guided Tour: ${currentStep?.title}`}
         style={{
           position: 'fixed',
-          left: `${finalRenderLeft}px`,
-          top: `${finalRenderTop}px`,
+          left: `${cardLeft}px`,
+          top: `${cardTop}px`,
           width: `${cardW}px`,
           maxHeight: `${Math.min(winH - margin * 2, 540)}px`,
           zIndex: 60,
@@ -663,14 +657,26 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
             : 'border-slate-200'
         }`}
       >
-        {/* Tooltip Header Strip — Primary Drag Handle */}
+        {/* Dedicated Drag Handle Bar — Exact match with Consumer Portal */}
         <div
-          onPointerDown={handleHeaderPointerDown}
-          className={`bg-slate-50 border-b border-slate-200 px-4 py-3 flex items-center justify-between shrink-0 select-none transition-colors ${
-            isDragging ? 'cursor-grabbing bg-slate-100/90' : 'cursor-grab hover:bg-slate-100/70'
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          className={`h-7 flex items-center justify-center cursor-grab active:cursor-grabbing border-b select-none transition-colors ${
+            isDark
+              ? 'bg-[#0B0C0E] border-[#292C32] text-[#6E737D] hover:text-[#9A9FA8]'
+              : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-slate-600'
           }`}
-          title="Click and drag header to move panel"
+          title="Drag to reposition tour window"
         >
+          <GripHorizontal className="w-4 h-4 opacity-75" />
+          <span className="text-[10px] uppercase font-mono tracking-wider ml-1.5 opacity-60">
+            DRAG TO MOVE
+          </span>
+        </div>
+
+        {/* Tooltip Header Strip */}
+        <div className="bg-slate-50/70 border-b border-slate-200 px-4 py-2.5 flex items-center justify-between shrink-0 select-none">
           <div className="flex items-center space-x-2 min-w-0">
             <span className="text-[11px] tabular-nums font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded shrink-0">
               STEP {currentStepIndex + 1} OF {totalSteps}
@@ -680,26 +686,15 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
             </span>
           </div>
 
-          <div className="flex items-center space-x-2 shrink-0">
-            {/* Visual Drag Cue Indicator */}
-            <div
-              className="flex items-center gap-1 text-[10px] text-slate-400 font-medium px-1.5 py-0.5 rounded bg-slate-200/50 border border-slate-200"
-              title="Click and drag to reposition panel"
-            >
-              <GripHorizontal className="w-3.5 h-3.5 text-slate-400" />
-              <span className="hidden sm:inline">Drag</span>
-            </div>
-
-            <button
-              onClick={handleCompleteOrSkip}
-              onPointerDown={e => e.stopPropagation()}
-              className="text-slate-400 hover:text-slate-600 p-1 rounded hover:bg-slate-200/70 transition-colors"
-              title="Exit Tour (Escape)"
-              aria-label="Exit tour"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleCompleteOrSkip}
+            className="text-slate-400 hover:text-slate-600 p-1 rounded hover:bg-slate-200/70 transition-colors cursor-pointer"
+            title="Exit Tour (Escape)"
+            aria-label="Exit tour"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Scrollable Tooltip Content Body (Keeps buttons accessible) */}
