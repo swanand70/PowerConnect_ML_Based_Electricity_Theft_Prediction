@@ -109,50 +109,50 @@ export const CaseDetail: React.FC = () => {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Contextual Navigation Breadcrumb */}
-      <div className="flex items-center justify-between bg-white border border-slate-200 rounded-lg px-4 py-2.5 shadow-2xs">
-        <nav aria-label="Breadcrumb" className="flex items-center space-x-2 text-xs font-medium text-slate-600">
+      <div className="flex items-center justify-between bg-white dark:bg-[#141619] border border-slate-200 dark:border-[#292C32] rounded-lg px-4 py-2.5 shadow-2xs">
+        <nav aria-label="Breadcrumb" className="flex items-center space-x-2 text-xs font-medium text-slate-600 dark:text-[#9A9FA8]">
           <Link
             to="/employee/inspections"
-            className="inline-flex items-center space-x-1.5 text-slate-600 hover:text-emerald-700 transition-colors font-semibold group"
+            className="inline-flex items-center space-x-1.5 text-slate-600 dark:text-[#9A9FA8] hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors font-semibold group"
           >
-            <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-700" />
+            <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-700 dark:group-hover:text-emerald-400" />
             <span>Inspection Queue</span>
           </Link>
-          <span className="text-slate-300">/</span>
-          <span className="tabular-nums text-slate-900 font-bold bg-slate-100 px-2 py-0.5 rounded text-[11px] border border-slate-200">
+          <span className="text-slate-300 dark:text-[#3E434D]">/</span>
+          <span className="tabular-nums text-slate-900 dark:text-[#F3F4F5] font-bold bg-slate-100 dark:bg-[#1F2329] px-2 py-0.5 rounded text-[11px] border border-slate-200 dark:border-[#292C32]">
             {caseData.case_number}
           </span>
-          <span className="text-slate-300">•</span>
-          <span className="text-slate-500 text-xs truncate max-w-xs">
+          <span className="text-slate-300 dark:text-[#3E434D]">•</span>
+          <span className="text-slate-500 dark:text-[#9A9FA8] text-xs truncate max-w-xs">
             {caseData.consumer_name}
           </span>
         </nav>
-        <span className="text-[11px] text-slate-400 tabular-nums font-medium hidden sm:inline">
+        <span className="text-[11px] text-slate-400 dark:text-[#717784] tabular-nums font-medium hidden sm:inline">
           {caseData.zone} Zone • {caseData.feeder}
         </span>
       </div>
 
       {/* Main Case Header Card */}
-      <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-xs">
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 border-b border-slate-100 pb-5">
+      <div className="bg-white dark:bg-[#141619] border border-slate-200 dark:border-[#292C32] rounded-lg p-6 shadow-xs">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 border-b border-slate-100 dark:border-[#292C32] pb-5">
           <div>
             <div className="flex items-center space-x-2.5 mb-1.5">
               <PriorityBadge category={caseData.risk_category} score={caseData.operational_priority_score} />
               <StatusBadge status={caseData.status} />
               <StatusBadge status={caseData.outcome} type="outcome" />
             </div>
-            <h1 className="text-xl font-bold text-slate-900">
+            <h1 className="text-xl font-bold text-slate-900 dark:text-[#F3F4F5]">
               {caseData.consumer_name}
             </h1>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 tabular-nums mt-1 font-medium">
-              <span>Case: <strong className="text-slate-800">{caseData.case_number}</strong></span>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-[#9A9FA8] tabular-nums mt-1 font-medium">
+              <span>Case: <strong className="text-slate-800 dark:text-[#F3F4F5]">{caseData.case_number}</strong></span>
               <span>•</span>
-              <span>SGCC Meter Identifier: <strong className="text-slate-800">{caseData.cons_no}</strong></span>
+              <span>SGCC Meter Identifier: <strong className="text-slate-800 dark:text-[#F3F4F5]">{caseData.cons_no}</strong></span>
               <span>•</span>
-              <span>Zone: <strong className="text-slate-800 font-semibold">{caseData.zone}</strong></span>
+              <span>Zone: <strong className="text-slate-800 dark:text-[#F3F4F5] font-semibold">{caseData.zone}</strong></span>
             </div>
             <div className="mt-2">
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 dark:bg-[#1F2329] text-slate-600 dark:text-[#9A9FA8] border border-slate-200 dark:border-[#292C32]">
                 Data Provenance: Real SGCC Consumption Data & Features • Demo Utility Account Metadata
               </span>
             </div>
@@ -163,17 +163,17 @@ export const CaseDetail: React.FC = () => {
             <button
               onClick={handleDownloadPdf}
               disabled={pdfLoading}
-              className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-semibold px-3 py-2 rounded-md transition-colors shadow-2xs flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
+              className="bg-white dark:bg-[#181B1F] hover:bg-slate-50 dark:hover:bg-[#1F2329] text-slate-700 dark:text-[#CBD0D8] border border-slate-300 dark:border-[#292C32] text-xs font-semibold px-3 py-2 rounded-md transition-colors shadow-2xs flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
               title="Download official electricity board inspection briefing dossier"
             >
               {pdfLoading ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-500" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-500 dark:text-slate-400" />
                   <span>Generating PDF...</span>
                 </>
               ) : (
                 <>
-                  <FileDown className="w-3.5 h-3.5 text-slate-600" />
+                  <FileDown className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
                   <span>Download Suspicion Report (PDF)</span>
                 </>
               )}
@@ -183,7 +183,7 @@ export const CaseDetail: React.FC = () => {
               <>
                 <button
                   onClick={() => setAssignOpen(true)}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3.5 py-2 rounded-md transition-colors cursor-pointer"
+                  className="bg-slate-100 dark:bg-[#1F2329] hover:bg-slate-200 dark:hover:bg-[#292C32] text-slate-700 dark:text-[#F3F4F5] text-xs font-semibold px-3.5 py-2 rounded-md transition-colors cursor-pointer border border-transparent dark:border-[#292C32]"
                 >
                   Assign Squad
                 </button>
@@ -202,20 +202,20 @@ export const CaseDetail: React.FC = () => {
         {pdfFeedback && (
           <div className={`mt-3 p-2.5 rounded-md text-xs font-medium flex items-center justify-between ${
             pdfFeedback.type === 'success'
-              ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
-              : 'bg-red-50 border border-red-200 text-red-800'
+              ? 'bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
+              : 'bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300'
           }`}>
             <span className="flex items-center space-x-1.5">
               {pdfFeedback.type === 'success' ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
               ) : (
-                <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
               )}
               <span>{pdfFeedback.message}</span>
             </span>
             <button
               onClick={() => setPdfFeedback(null)}
-              className="text-slate-400 hover:text-slate-600 text-xs font-bold px-1"
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold px-1"
             >
               ✕
             </button>
@@ -224,52 +224,52 @@ export const CaseDetail: React.FC = () => {
 
         {/* Operational Metrics Bar */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-5">
-          <div className="border-r border-slate-100 pr-3">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 block">
+          <div className="border-r border-slate-100 dark:border-[#292C32] pr-3">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-[#9A9FA8] block">
               Theft Probability
             </span>
-            <span className="text-xl font-bold tabular-nums text-red-700">
+            <span className="text-xl font-bold tabular-nums text-red-700 dark:text-red-400">
               {caseData.theft_risk_percentage.toFixed(1)}%
             </span>
-            <span className="text-[10px] text-slate-400 block mt-0.5 tabular-nums">
+            <span className="text-[10px] text-slate-400 dark:text-[#717784] block mt-0.5 tabular-nums">
               Cutoff: {(caseData.threshold_used * 100).toFixed(0)}%
             </span>
           </div>
 
-          <div className="border-r border-slate-100 pr-3">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 block">
+          <div className="border-r border-slate-100 dark:border-[#292C32] pr-3">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-[#9A9FA8] block">
               Operational Priority
             </span>
-            <span className="text-xl font-bold tabular-nums text-slate-900">
+            <span className="text-xl font-bold tabular-nums text-slate-900 dark:text-[#F3F4F5]">
               {caseData.operational_priority_score.toFixed(1)} / 100
             </span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">
+            <span className="text-[10px] text-slate-400 dark:text-[#717784] block mt-0.5">
               Ranked on Risk + Volatility
             </span>
           </div>
 
-          <div className="border-r border-slate-100 pr-3">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 block">
+          <div className="border-r border-slate-100 dark:border-[#292C32] pr-3">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-[#9A9FA8] block">
               Data Quality
             </span>
             <span className={`text-base font-bold tabular-nums ${
-              caseData.data_quality_category === 'High' ? 'text-emerald-700' : 'text-amber-700'
+              caseData.data_quality_category === 'High' ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'
             }`}>
               {caseData.data_quality_category} ({caseData.data_quality_score.toFixed(2)})
             </span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">
+            <span className="text-[10px] text-slate-400 dark:text-[#717784] block mt-0.5">
               Input Meter Integrity
             </span>
           </div>
 
           <div>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 block">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-[#9A9FA8] block">
               Assigned Squad Lead
             </span>
-            <span className="text-sm font-semibold text-slate-900 block truncate">
+            <span className="text-sm font-semibold text-slate-900 dark:text-[#F3F4F5] block truncate">
               {caseData.assigned_employee_name || 'Unassigned'}
             </span>
-            <span className="text-[10px] text-slate-400 block mt-0.5 tabular-nums">
+            <span className="text-[10px] text-slate-400 dark:text-[#717784] block mt-0.5 tabular-nums">
               {caseData.scheduled_date ? `Scheduled: ${caseData.scheduled_date}` : 'Not scheduled'}
             </span>
           </div>
@@ -277,27 +277,27 @@ export const CaseDetail: React.FC = () => {
       </div>
 
       {/* Grid Location & Connection Context Card */}
-      <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-xs">
-        <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wide mb-3 flex items-center space-x-1.5">
-          <MapPin className="w-3.5 h-3.5 text-slate-500" />
+      <div className="bg-white dark:bg-[#141619] border border-slate-200 dark:border-[#292C32] rounded-lg p-5 shadow-xs">
+        <h3 className="text-xs font-bold text-slate-800 dark:text-[#F3F4F5] uppercase tracking-wide mb-3 flex items-center space-x-1.5">
+          <MapPin className="w-3.5 h-3.5 text-slate-500 dark:text-[#9A9FA8]" />
           <span>Grid Supply & Meter Infrastructure</span>
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
           <div>
-            <span className="text-slate-500 block">Distribution Substation:</span>
-            <strong className="text-slate-800">{caseData.substation}</strong>
+            <span className="text-slate-500 dark:text-[#9A9FA8] block">Distribution Substation:</span>
+            <strong className="text-slate-800 dark:text-[#F3F4F5]">{caseData.substation}</strong>
           </div>
           <div>
-            <span className="text-slate-500 block">11kV Feeder:</span>
-            <strong className="text-slate-800">{caseData.feeder}</strong>
+            <span className="text-slate-500 dark:text-[#9A9FA8] block">11kV Feeder:</span>
+            <strong className="text-slate-800 dark:text-[#F3F4F5]">{caseData.feeder}</strong>
           </div>
           <div>
-            <span className="text-slate-500 block">Meter Hardware:</span>
-            <strong className="text-slate-800 tabular-nums">{caseData.meter_number || 'SMART-MTR-STD'}</strong>
+            <span className="text-slate-500 dark:text-[#9A9FA8] block">Meter Hardware:</span>
+            <strong className="text-slate-800 dark:text-[#F3F4F5] tabular-nums">{caseData.meter_number || 'SMART-MTR-STD'}</strong>
           </div>
           <div>
-            <span className="text-slate-500 block">Tariff Category:</span>
-            <strong className="text-slate-800">{caseData.tariff_category}</strong>
+            <span className="text-slate-500 dark:text-[#9A9FA8] block">Tariff Category:</span>
+            <strong className="text-slate-800 dark:text-[#F3F4F5]">{caseData.tariff_category}</strong>
           </div>
         </div>
       </div>
@@ -316,7 +316,7 @@ export const CaseDetail: React.FC = () => {
 
       {/* Real Consumption Trend Component with Suspicion Highlights */}
       {explanation && (
-        <div data-tour="case-consumption" className="bg-white border border-slate-200 rounded-lg p-5 shadow-xs">
+        <div data-tour="case-consumption" className="bg-white dark:bg-[#141619] border border-slate-200 dark:border-[#292C32] rounded-lg p-5 shadow-xs">
           <ConsumptionChart
             readings={explanation.annotatedReadings}
             meanConsumption={explanation.baselineMean}
@@ -328,45 +328,45 @@ export const CaseDetail: React.FC = () => {
 
       {/* Physical Field Outcome Evidence Card (If Recorded) */}
       {caseData.outcome !== 'NOT_VERIFIED' && (
-        <div className="bg-white border-2 border-emerald-300 rounded-lg p-5 shadow-xs">
-          <div className="flex items-center space-x-2 text-emerald-800 mb-3">
+        <div className="bg-white dark:bg-[#141619] border-2 border-emerald-300 dark:border-emerald-600/60 rounded-lg p-5 shadow-xs">
+          <div className="flex items-center space-x-2 text-emerald-800 dark:text-emerald-400 mb-3">
             <CheckCircle2 className="w-4 h-4" />
             <h3 className="text-sm font-bold uppercase tracking-wide">
               Verified Physical Audit Findings
             </h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs bg-slate-50 p-4 rounded border border-slate-200 mb-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs bg-slate-50 dark:bg-[#181B1F] p-4 rounded border border-slate-200 dark:border-[#292C32] mb-3">
             <div>
-              <span className="text-slate-500 block">Physical Meter Tampering:</span>
-              <strong className={caseData.meter_tampered ? 'text-red-700 font-bold' : 'text-slate-700'}>
+              <span className="text-slate-500 dark:text-[#9A9FA8] block">Physical Meter Tampering:</span>
+              <strong className={caseData.meter_tampered ? 'text-red-700 dark:text-red-400 font-bold' : 'text-slate-700 dark:text-[#CBD0D8]'}>
                 {caseData.meter_tampered ? 'CONFIRMED' : 'NONE DETECTED'}
               </strong>
             </div>
             <div>
-              <span className="text-slate-500 block">Assessed Penalty:</span>
-              <strong className="text-slate-900 tabular-nums">
+              <span className="text-slate-500 dark:text-[#9A9FA8] block">Assessed Penalty:</span>
+              <strong className="text-slate-900 dark:text-[#F3F4F5] tabular-nums">
                 {caseData.penalty_amount_inr ? `₹ ${caseData.penalty_amount_inr.toLocaleString()}` : 'None'}
               </strong>
             </div>
             <div>
-              <span className="text-slate-500 block">Audit Recorded Date:</span>
-              <strong className="text-slate-900 tabular-nums">
+              <span className="text-slate-500 dark:text-[#9A9FA8] block">Audit Recorded Date:</span>
+              <strong className="text-slate-900 dark:text-[#F3F4F5] tabular-nums">
                 {caseData.inspected_at ? new Date(caseData.inspected_at).toLocaleDateString() : 'Recorded'}
               </strong>
             </div>
           </div>
 
           {caseData.findings_summary && (
-            <div className="text-xs text-slate-700">
-              <span className="font-semibold text-slate-900 block mb-0.5">Findings Summary:</span>
-              <p className="bg-slate-50 p-3 rounded border border-slate-200 text-[11px] leading-relaxed">
+            <div className="text-xs text-slate-700 dark:text-[#CBD0D8]">
+              <span className="font-semibold text-slate-900 dark:text-[#F3F4F5] block mb-0.5">Findings Summary:</span>
+              <p className="bg-slate-50 dark:bg-[#181B1F] p-3 rounded border border-slate-200 dark:border-[#292C32] text-[11px] leading-relaxed text-slate-800 dark:text-[#CBD0D8]">
                 {caseData.findings_summary}
               </p>
             </div>
           )}
 
-          <div className="mt-3 text-[11px] text-emerald-800 bg-emerald-50 border border-emerald-200 p-2.5 rounded">
+          <div className="mt-3 text-[11px] text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 p-2.5 rounded">
             ✓ This verified field record has been synchronized into the feedback repository and is eligible for future model evaluation and calibration.
           </div>
         </div>

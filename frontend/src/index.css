@@ -84,62 +84,61 @@ html.light body {
 
 /* Scoped Employee & Operational Workspace Dark Theme Tokens */
 .dark .employee-workspace .bg-white {
-  background-color: #141619 !important;
+  background-color: #141619;
   color: #F3F4F5;
 }
 
-.dark .employee-workspace .bg-slate-50 {
-  background-color: #181B1F !important;
-  color: #F3F4F5;
+.dark .employee-workspace .bg-slate-50,
+.dark .employee-workspace [class*="bg-slate-50/"] {
+  background-color: #181B1F;
 }
 
 .dark .employee-workspace .bg-slate-100 {
-  background-color: #1F2329 !important;
-  color: #F3F4F5;
+  background-color: #1F2329;
 }
 
 .dark .employee-workspace .border-slate-100,
 .dark .employee-workspace .border-slate-200,
 .dark .employee-workspace .border-slate-300 {
-  border-color: #292C32 !important;
+  border-color: #292C32;
 }
 
 .dark .employee-workspace .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
 .dark .employee-workspace .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
-  border-color: #202328 !important;
+  border-color: #202328;
 }
 
 .dark .employee-workspace .text-slate-900,
 .dark .employee-workspace .text-slate-800 {
-  color: #F3F4F5 !important;
+  color: #F3F4F5;
 }
 
 .dark .employee-workspace .text-slate-700,
 .dark .employee-workspace .text-slate-600 {
-  color: #9A9FA8 !important;
+  color: #9A9FA8;
 }
 
 .dark .employee-workspace .text-slate-500 {
-  color: #717784 !important;
+  color: #717784;
 }
 
 .dark .employee-workspace input,
 .dark .employee-workspace select,
 .dark .employee-workspace textarea {
-  background-color: #141619 !important;
-  border-color: #292C32 !important;
-  color: #F3F4F5 !important;
+  background-color: #141619;
+  border-color: #292C32;
+  color: #F3F4F5;
 }
 
 .dark .employee-workspace table thead {
-  background-color: #0B0C0E !important;
-  border-color: #292C32 !important;
+  background-color: #0B0C0E;
+  border-color: #292C32;
 }
 
 .dark .employee-workspace table tr {
-  border-color: #202328 !important;
+  border-color: #202328;
 }
 
 .dark .employee-workspace table tr:hover {
-  background-color: #181B1F !important;
+  background-color: #181B1F;
 }

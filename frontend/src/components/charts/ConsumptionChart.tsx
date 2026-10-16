@@ -11,6 +11,7 @@ import {
   ReferenceArea
 } from 'recharts';
 import type { AnnotatedDailyReading, AnomalyObservation } from '../../utils/anomalyExplanation';
+import { useTheme } from '../../context/ThemeContext';
 import { Info, AlertCircle, TrendingDown } from 'lucide-react';
 
 interface ConsumptionChartProps {
@@ -28,13 +29,15 @@ export const ConsumptionChart: React.FC<ConsumptionChartProps> = ({
   selectedObservation,
   onSelectReading
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   if (!readings || readings.length === 0) {
     return (
-      <div className="h-64 flex flex-col items-center justify-center bg-slate-50 border border-slate-200 rounded-lg text-slate-400 text-xs p-6">
-        <Info className="w-6 h-6 text-slate-300 mb-2" />
-        <p className="font-semibold text-slate-600">No daily smart meter readings available</p>
-        <p className="text-slate-400 text-[11px] mt-0.5">Historical smart meter telemetry has not been indexed for this feeder connection.</p>
+      <div className="h-64 flex flex-col items-center justify-center bg-slate-50 dark:bg-[#181B1F] border border-slate-200 dark:border-[#292C32] rounded-lg text-slate-400 dark:text-[#717784] text-xs p-6">
+        <Info className="w-6 h-6 text-slate-300 dark:text-[#6E737D] mb-2" />
+        <p className="font-semibold text-slate-600 dark:text-[#CBD0D8]">No daily smart meter readings available</p>
+        <p className="text-slate-400 dark:text-[#717784] text-[11px] mt-0.5">Historical smart meter telemetry has not been indexed for this feeder connection.</p>
       </div>
     );
   }
@@ -50,12 +53,12 @@ export const ConsumptionChart: React.FC<ConsumptionChartProps> = ({
   return (
     <div className="w-full space-y-4">
       {/* Header and Legend */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 dark:border-[#292C32] pb-3">
         <div>
-          <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+          <h3 className="text-xs font-bold text-slate-900 dark:text-[#F3F4F5] uppercase tracking-wide">
             Electricity consumption over time
           </h3>
-          <p className="text-[11px] text-slate-500 mt-0.5">
+          <p className="text-[11px] text-slate-500 dark:text-[#9A9FA8] mt-0.5">
             Continuous 60-day smart meter telemetry • Daily consumption (kWh/Day)
           </p>
         </div>
@@ -64,18 +67,18 @@ export const ConsumptionChart: React.FC<ConsumptionChartProps> = ({
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
           <div className="flex items-center space-x-1.5">
             <span className="w-3 h-3 bg-emerald-600 rounded-xs inline-block"></span>
-            <span className="text-slate-600 font-medium">Daily kWh</span>
+            <span className="text-slate-600 dark:text-[#CBD0D8] font-medium">Daily kWh</span>
           </div>
 
           <div className="flex items-center space-x-1.5">
-            <span className="w-3.5 h-0.5 border-t-2 border-dashed border-slate-400 inline-block"></span>
-            <span className="text-slate-500 tabular-nums">Baseline Avg ({avgKwh.toFixed(1)} kWh)</span>
+            <span className="w-3.5 h-0.5 border-t-2 border-dashed border-slate-400 dark:border-slate-500 inline-block"></span>
+            <span className="text-slate-500 dark:text-[#9A9FA8] tabular-nums">Baseline Avg ({avgKwh.toFixed(1)} kWh)</span>
           </div>
 
           {anomalousCount > 0 && (
             <div className="flex items-center space-x-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-100 border border-red-600 inline-block"></span>
-              <span className="text-red-700 font-semibold tabular-nums">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-100 dark:bg-red-950/60 border border-red-600 dark:border-red-500 inline-block"></span>
+              <span className="text-red-700 dark:text-red-400 font-semibold tabular-nums">
                 Anomalous Days ({anomalousCount})
               </span>
             </div>
@@ -84,7 +87,7 @@ export const ConsumptionChart: React.FC<ConsumptionChartProps> = ({
       </div>
 
       {/* Main Chart Canvas */}
-      <div className="h-72 w-full bg-white p-2 border border-slate-200 rounded-lg relative">
+      <div className="h-72 w-full bg-white dark:bg-[#141619] p-2 border border-slate-200 dark:border-[#292C32] rounded-lg relative">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={readings}
@@ -106,20 +109,20 @@ export const ConsumptionChart: React.FC<ConsumptionChartProps> = ({
               </linearGradient>
             </defs>
 
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#202328' : '#f1f5f9'} />
 
             <XAxis
               dataKey="date"
               tickLine={false}
-              axisLine={{ stroke: '#e2e8f0' }}
-              tick={{ fontSize: 10, fill: '#64748b' }}
+              axisLine={{ stroke: isDark ? '#292C32' : '#e2e8f0' }}
+              tick={{ fontSize: 10, fill: isDark ? '#9A9FA8' : '#64748b' }}
               interval={Math.ceil(readings.length / 8)}
             />
 
             <YAxis
               tickLine={false}
               axisLine={false}
-              tick={{ fontSize: 10, fill: '#64748b' }}
+              tick={{ fontSize: 10, fill: isDark ? '#9A9FA8' : '#64748b' }}
               unit=" kWh"
             />
 
@@ -128,9 +131,9 @@ export const ConsumptionChart: React.FC<ConsumptionChartProps> = ({
               <ReferenceArea
                 x1={startHighlight}
                 x2={endHighlight}
-                fill="#fef3c7"
-                fillOpacity={0.5}
-                stroke="#f59e0b"
+                fill={isDark ? '#451a03' : '#fef3c7'}
+                fillOpacity={isDark ? 0.45 : 0.5}
+                stroke="#d97706"
                 strokeDasharray="3 3"
               />
             )}
@@ -138,12 +141,12 @@ export const ConsumptionChart: React.FC<ConsumptionChartProps> = ({
             {/* Baseline Average Reference Line */}
             <ReferenceLine
               y={avgKwh}
-              stroke="#94a3b8"
+              stroke={isDark ? '#6E737D' : '#94a3b8'}
               strokeDasharray="4 4"
               label={{
                 value: `Baseline Mean (${avgKwh.toFixed(1)} kWh)`,
                 position: 'insideTopRight',
-                fill: '#64748b',
+                fill: isDark ? '#9A9FA8' : '#64748b',
                 fontSize: 9
               }}
             />
@@ -210,27 +213,27 @@ export const ConsumptionChart: React.FC<ConsumptionChartProps> = ({
 
       {/* Section 5.5: What this graph tells you */}
       {graphNarrative && (
-        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-2">
+        <div className="bg-slate-50 dark:bg-[#181B1F] border border-slate-200 dark:border-[#292C32] rounded-lg p-4 space-y-2">
           <div className="flex items-center space-x-2">
-            <span className="p-1 rounded bg-slate-200 text-slate-700">
+            <span className="p-1 rounded bg-slate-200 dark:bg-[#202328] text-slate-700 dark:text-[#CBD0D8]">
               <TrendingDown className="w-3.5 h-3.5" />
             </span>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-[#F3F4F5]">
               What this graph tells you
             </h4>
           </div>
-          <p className="text-xs text-slate-700 leading-relaxed font-medium">
+          <p className="text-xs text-slate-700 dark:text-[#CBD0D8] leading-relaxed font-medium">
             {graphNarrative}
           </p>
-          <div className="pt-1.5 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
+          <div className="pt-1.5 border-t border-slate-200/80 dark:border-[#292C32] flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-[#9A9FA8]">
             <span>
-              • <strong>Expected Range:</strong> {Math.max(0, avgKwh - 4).toFixed(1)} – {(avgKwh + 5).toFixed(1)} kWh/day
+              • <strong className="text-slate-700 dark:text-[#F3F4F5]">Expected Range:</strong> {Math.max(0, avgKwh - 4).toFixed(1)} – {(avgKwh + 5).toFixed(1)} kWh/day
             </span>
             <span>
-              • <strong>Anomalous Readings:</strong> {anomalousCount} of {readings.length} days ({((anomalousCount / readings.length) * 100).toFixed(0)}%)
+              • <strong className="text-slate-700 dark:text-[#F3F4F5]">Anomalous Readings:</strong> {anomalousCount} of {readings.length} days ({((anomalousCount / readings.length) * 100).toFixed(0)}%)
             </span>
             <span>
-              • <strong>Standard Deviation:</strong> ±{Math.abs(avgKwh * 0.25).toFixed(1)} kWh
+              • <strong className="text-slate-700 dark:text-[#F3F4F5]">Standard Deviation:</strong> ±{Math.abs(avgKwh * 0.25).toFixed(1)} kWh
             </span>
           </div>
         </div>

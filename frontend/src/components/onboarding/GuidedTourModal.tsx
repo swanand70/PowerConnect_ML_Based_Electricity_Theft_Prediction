@@ -170,7 +170,11 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
     startTop: number;
   } | null>(null);
 
-  const tourSteps = getTourSteps(activeCaseId);
+  // Derive case ID: if user is currently on an inspection case detail route, use that ID
+  const routeCaseMatch = location.pathname.match(/\/employee\/inspections\/(\d+)/);
+  const effectiveCaseId = routeCaseMatch ? Number(routeCaseMatch[1]) : activeCaseId;
+
+  const tourSteps = getTourSteps(effectiveCaseId);
   const totalSteps = tourSteps.length;
   const currentStep = currentStepIndex >= 0 && currentStepIndex < totalSteps ? tourSteps[currentStepIndex] : null;
 
@@ -191,15 +195,20 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
   // Fetch active case IDs on open
   useEffect(() => {
     if (isOpen) {
-      api.getCases()
-        .then(cases => {
-          if (cases && cases.length > 0) {
-            setActiveCaseId(cases[0].id);
-          }
-        })
-        .catch(() => {});
+      const match = location.pathname.match(/\/employee\/inspections\/(\d+)/);
+      if (match) {
+        setActiveCaseId(Number(match[1]));
+      } else {
+        api.getCases()
+          .then(cases => {
+            if (cases && cases.length > 0) {
+              setActiveCaseId(cases[0].id);
+            }
+          })
+          .catch(() => {});
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, location.pathname]);
 
   // Track window resize
   useEffect(() => {
@@ -242,8 +251,13 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
     const el = document.querySelector(currentStep.selector);
     if (el) {
       const rect = el.getBoundingClientRect();
-      setTargetRect(rect);
-      setTargetFound(true);
+      if (rect.width > 0 && rect.height > 0) {
+        setTargetRect(rect);
+        setTargetFound(true);
+      } else {
+        setTargetRect(null);
+        setTargetFound(false);
+      }
     } else {
       setTargetRect(null);
       setTargetFound(false);
@@ -288,11 +302,16 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
           inline: 'nearest'
         });
 
-        window.setTimeout(() => {
-          const rect = el.getBoundingClientRect();
-          setTargetRect(rect);
-          setTargetFound(true);
-        }, 140);
+        // Multi-interval check to track smooth-scroll settling
+        [100, 250, 450].forEach(delay => {
+          window.setTimeout(() => {
+            const rect = el.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) {
+              setTargetRect(rect);
+              setTargetFound(true);
+            }
+          }, delay);
+        });
       } else if (attempts >= maxAttempts) {
         if (pollingTimerRef.current) {
           window.clearInterval(pollingTimerRef.current);
@@ -312,7 +331,7 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
     };
   }, [isOpen, currentStepIndex, currentStep, location.pathname, navigate]);
 
-  // Recalculate target rect on scroll and resize
+  // Recalculate target rect on scroll (capture-phase for main scroll container) and resize
   useEffect(() => {
     if (!isOpen || currentStepIndex < 0) return;
 
@@ -320,11 +339,11 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
       updateTargetRect();
     };
 
-    window.addEventListener('scroll', handleWindowChange, { passive: true });
+    window.addEventListener('scroll', handleWindowChange, true);
     window.addEventListener('resize', handleWindowChange);
 
     return () => {
-      window.removeEventListener('scroll', handleWindowChange);
+      window.removeEventListener('scroll', handleWindowChange, true);
       window.removeEventListener('resize', handleWindowChange);
     };
   }, [isOpen, currentStepIndex, updateTargetRect]);
@@ -520,33 +539,33 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
   if (currentStepIndex === -1) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-        <div className="bg-white border border-slate-200 rounded-xl max-w-lg w-full shadow-2xl overflow-hidden p-6 sm:p-7">
+        <div className="bg-white dark:bg-[#141619] border border-slate-200 dark:border-[#292C32] rounded-xl max-w-lg w-full shadow-2xl overflow-hidden p-6 sm:p-7">
           <div className="flex justify-between items-start">
-            <div className="h-11 w-11 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg flex items-center justify-center mb-4">
+            <div className="h-11 w-11 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/60 rounded-lg flex items-center justify-center mb-4">
               <Compass className="w-6 h-6" />
             </div>
             <button
               onClick={handleCompleteOrSkip}
-              className="text-slate-400 hover:text-slate-600 p-1.5 rounded-md hover:bg-slate-100 transition-colors"
+              className="text-slate-400 dark:text-[#7A808C] hover:text-slate-600 dark:hover:text-[#F3F4F5] p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-[#1E2227] transition-colors"
               aria-label="Close"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          <h3 className="text-lg font-bold text-slate-900 tracking-tight">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-[#F3F4F5] tracking-tight">
             Vigilance & Inspection Interactive Tour
           </h3>
-          <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+          <p className="text-xs text-slate-600 dark:text-[#9A9FA8] mt-2 leading-relaxed">
             Welcome to the operational workspace. This guided walkthrough moves through the live application, spotlighting key operational controls across the Priority Dashboard, Inspection Queue, GIS Map, Case Analysis, and Verified Field Audits.
           </p>
 
-          <div className="mt-4 bg-slate-50 border border-slate-200 rounded-lg p-3 text-[11px] text-slate-600 space-y-1.5">
-            <div className="flex items-center space-x-2 text-slate-800 font-semibold">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-700" />
+          <div className="mt-4 bg-slate-50 dark:bg-[#181B1F] border border-slate-200 dark:border-[#292C32] rounded-lg p-3 text-[11px] text-slate-600 dark:text-[#9A9FA8] space-y-1.5">
+            <div className="flex items-center space-x-2 text-slate-800 dark:text-[#F3F4F5] font-semibold">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
               <span>Interactive Cross-Page Walkthrough:</span>
             </div>
-            <p className="text-slate-500 pl-5">
+            <p className="text-slate-500 dark:text-[#7A808C] pl-5">
               Advances through the actual portal, highlighting real controls and data without modifying operational records. You can drag the tour dialog anytime to view obscured content.
             </p>
           </div>
@@ -561,7 +580,7 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
             </button>
             <button
               onClick={handleCompleteOrSkip}
-              className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 px-4 rounded-lg text-xs transition-colors"
+              className="flex-1 bg-slate-100 dark:bg-[#1E2227] hover:bg-slate-200 dark:hover:bg-[#252A30] text-slate-700 dark:text-[#D1D4DC] font-semibold py-2.5 px-4 rounded-lg text-xs transition-colors"
             >
               I'm Familiar With The System
             </button>
@@ -651,10 +670,14 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
           zIndex: 60,
           userSelect: isDragging ? 'none' : 'auto'
         }}
-        className={`bg-white border rounded-xl shadow-2xl flex flex-col text-slate-800 transition-shadow duration-150 animate-in fade-in zoom-in-95 ${
+        className={`border rounded-xl shadow-2xl flex flex-col transition-shadow duration-150 animate-in fade-in zoom-in-95 ${
+          isDark ? 'bg-[#141619] text-[#F3F4F5]' : 'bg-white text-slate-800'
+        } ${
           isDragging
             ? 'border-emerald-500 ring-2 ring-emerald-500/30 shadow-3xl'
-            : 'border-slate-200'
+            : isDark
+              ? 'border-[#292C32]'
+              : 'border-slate-200'
         }`}
       >
         {/* Dedicated Drag Handle Bar — Exact match with Consumer Portal */}
@@ -676,12 +699,18 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
         </div>
 
         {/* Tooltip Header Strip */}
-        <div className="bg-slate-50/70 border-b border-slate-200 px-4 py-2.5 flex items-center justify-between shrink-0 select-none">
+        <div className={`border-b px-4 py-2.5 flex items-center justify-between shrink-0 select-none ${
+          isDark ? 'bg-[#181B1F] border-[#292C32]' : 'bg-slate-50/70 border-slate-200'
+        }`}>
           <div className="flex items-center space-x-2 min-w-0">
-            <span className="text-[11px] tabular-nums font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded shrink-0">
+            <span className={`text-[11px] tabular-nums font-bold px-2 py-0.5 rounded shrink-0 border ${
+              isDark ? 'bg-emerald-950/50 text-emerald-400 border-emerald-900/60' : 'bg-emerald-50 text-emerald-800 border-emerald-300'
+            }`}>
               STEP {currentStepIndex + 1} OF {totalSteps}
             </span>
-            <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider truncate">
+            <span className={`text-[10px] font-semibold uppercase tracking-wider truncate ${
+              isDark ? 'text-[#9A9FA8]' : 'text-slate-500'
+            }`}>
               {currentStep?.badge}
             </span>
           </div>
@@ -689,7 +718,9 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
           <button
             type="button"
             onClick={handleCompleteOrSkip}
-            className="text-slate-400 hover:text-slate-600 p-1 rounded hover:bg-slate-200/70 transition-colors cursor-pointer"
+            className={`p-1 rounded transition-colors cursor-pointer ${
+              isDark ? 'text-[#7A808C] hover:text-[#F3F4F5] hover:bg-[#1E2227]' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/70'
+            }`}
             title="Exit Tour (Escape)"
             aria-label="Exit tour"
           >
@@ -700,57 +731,75 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
         {/* Scrollable Tooltip Content Body (Keeps buttons accessible) */}
         <div className="p-4 sm:p-5 flex-1 overflow-y-auto min-h-0">
           <div className="flex items-start justify-between gap-2 mb-2">
-            <h4 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
+            <h4 className={`text-sm sm:text-base font-bold tracking-tight ${
+              isDark ? 'text-[#F3F4F5]' : 'text-slate-900'
+            }`}>
               {currentStep?.title}
             </h4>
             {location.pathname !== currentStep?.route && (
-              <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-medium shrink-0 flex items-center gap-1">
+              <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0 flex items-center gap-1 ${
+                isDark ? 'bg-emerald-950/50 text-emerald-400' : 'bg-emerald-50 text-emerald-700'
+              }`}>
                 <span>Navigating</span>
                 <ExternalLink className="w-3 h-3" />
               </span>
             )}
           </div>
 
-          <p className="text-xs text-slate-600 leading-relaxed min-h-[44px]">
+          <p className={`text-xs leading-relaxed min-h-[44px] ${
+            isDark ? 'text-[#9A9FA8]' : 'text-slate-600'
+          }`}>
             {currentStep?.description}
           </p>
 
           {/* Fallback note if element could not be spotted */}
           {!targetFound && !isResolving && (
-            <div className="mt-2.5 p-2 bg-slate-100 rounded text-[11px] text-slate-500">
+            <div className={`mt-2.5 p-2 rounded text-[11px] ${
+              isDark ? 'bg-[#1E2227] text-[#9A9FA8]' : 'bg-slate-100 text-slate-500'
+            }`}>
               Target element is loading or out of view on this display resolution.
             </div>
           )}
 
           {/* Progress Indicator Bar */}
-          <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100">
+          <div className={`flex items-center justify-between mt-4 pt-3 border-t ${
+            isDark ? 'border-[#202328]' : 'border-slate-100'
+          }`}>
             <div className="flex space-x-1">
               {tourSteps.map((_, idx) => (
                 <div
                   key={idx}
                   className={`h-1.5 rounded-full transition-all duration-150 ${
                     idx === currentStepIndex
-                      ? 'w-5 bg-emerald-700'
+                      ? 'w-5 bg-emerald-600 dark:bg-emerald-500'
                       : idx < currentStepIndex
-                        ? 'w-1.5 bg-emerald-300'
-                        : 'w-1.5 bg-slate-200'
+                        ? 'w-1.5 bg-emerald-300 dark:bg-emerald-800'
+                        : isDark
+                          ? 'w-1.5 bg-[#292C32]'
+                          : 'w-1.5 bg-slate-200'
                   }`}
                 />
               ))}
             </div>
 
-            <span className="text-[10px] text-slate-400 tabular-nums font-medium">
+            <span className={`text-[10px] tabular-nums font-medium ${
+              isDark ? 'text-[#7A808C]' : 'text-slate-400'
+            }`}>
               {Math.round(((currentStepIndex + 1) / totalSteps) * 100)}% Completed
             </span>
           </div>
         </div>
 
         {/* Tooltip Action Buttons Footer — Always visible at bottom */}
-        <div className="bg-slate-50 border-t border-slate-200 px-4 py-3 flex items-center justify-between shrink-0">
+        <div className={`border-t px-4 py-3 flex items-center justify-between shrink-0 ${
+          isDark ? 'bg-[#181B1F] border-[#292C32]' : 'bg-slate-50 border-slate-200'
+        }`}>
           <button
             onClick={handlePrevStep}
             onPointerDown={e => e.stopPropagation()}
-            className="text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center space-x-1 px-2.5 py-1.5 rounded hover:bg-slate-200 transition-colors"
+            className={`text-xs font-semibold flex items-center space-x-1 px-2.5 py-1.5 rounded transition-colors ${
+              isDark ? 'text-[#9A9FA8] hover:text-[#F3F4F5] hover:bg-[#1E2227]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+            }`}
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back</span>
@@ -760,7 +809,9 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
             <button
               onClick={handleCompleteOrSkip}
               onPointerDown={e => e.stopPropagation()}
-              className="text-xs font-semibold text-slate-500 hover:text-slate-800 px-3 py-1.5 rounded hover:bg-slate-200 transition-colors"
+              className={`text-xs font-semibold px-3 py-1.5 rounded transition-colors ${
+                isDark ? 'text-[#7A808C] hover:text-[#F3F4F5] hover:bg-[#1E2227]' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200'
+              }`}
             >
               Skip
             </button>

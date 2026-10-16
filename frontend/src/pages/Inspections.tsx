@@ -71,29 +71,29 @@ export const Inspections: React.FC = () => {
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-200 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-200 dark:border-[#292C32] pb-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-[#F3F4F5] tracking-tight">
             Prioritized Inspection Queue
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-slate-500 dark:text-[#9A9FA8] mt-0.5">
             Ranked operational vigilance candidates sorted by theft probability & operational priority
           </p>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div data-tour="queue-filters" className="bg-white border border-slate-200 rounded-lg p-4 shadow-2xs space-y-3">
+      <div data-tour="queue-filters" className="bg-white dark:bg-[#141619] border border-slate-200 dark:border-[#292C32] rounded-lg p-4 shadow-2xs space-y-3">
         <div className="flex flex-col md:flex-row gap-3">
           {/* Search */}
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-slate-400 dark:text-[#7A808C] absolute left-3 top-2.5" />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search by consumer name, case number, or feeder..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-md pl-9 pr-3 py-1.5 text-xs text-slate-900 focus:bg-white focus:ring-1 focus:ring-emerald-700 focus:outline-hidden"
+              className="w-full bg-slate-50 dark:bg-[#181B1F] border border-slate-200 dark:border-[#292C32] rounded-md pl-9 pr-3 py-1.5 text-xs text-slate-900 dark:text-[#F3F4F5] focus:bg-white dark:focus:bg-[#1E2227] focus:ring-1 focus:ring-emerald-700 focus:outline-hidden"
             />
           </div>
 
@@ -102,7 +102,7 @@ export const Inspections: React.FC = () => {
             <select
               value={selectedZone}
               onChange={e => setSelectedZone(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-md px-3 py-1.5 text-xs text-slate-700 focus:bg-white focus:ring-1 focus:ring-emerald-700 focus:outline-hidden"
+              className="w-full bg-slate-50 dark:bg-[#181B1F] border border-slate-200 dark:border-[#292C32] rounded-md px-3 py-1.5 text-xs text-slate-700 dark:text-[#D1D4DC] focus:bg-white dark:focus:bg-[#1E2227] focus:ring-1 focus:ring-emerald-700 focus:outline-hidden"
             >
               <option value="">All Zones</option>
               <option value="North">North Zone</option>
@@ -118,7 +118,7 @@ export const Inspections: React.FC = () => {
             <select
               value={selectedStatus}
               onChange={e => setSelectedStatus(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-md px-3 py-1.5 text-xs text-slate-700 focus:bg-white focus:ring-1 focus:ring-emerald-700 focus:outline-hidden"
+              className="w-full bg-slate-50 dark:bg-[#181B1F] border border-slate-200 dark:border-[#292C32] rounded-md px-3 py-1.5 text-xs text-slate-700 dark:text-[#D1D4DC] focus:bg-white dark:focus:bg-[#1E2227] focus:ring-1 focus:ring-emerald-700 focus:outline-hidden"
             >
               <option value="">All Statuses</option>
               <option value="DETECTED">Detected (Unassigned)</option>
@@ -133,7 +133,7 @@ export const Inspections: React.FC = () => {
             <select
               value={selectedRisk}
               onChange={e => setSelectedRisk(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-md px-3 py-1.5 text-xs text-slate-700 focus:bg-white focus:ring-1 focus:ring-emerald-700 focus:outline-hidden"
+              className="w-full bg-slate-50 dark:bg-[#181B1F] border border-slate-200 dark:border-[#292C32] rounded-md px-3 py-1.5 text-xs text-slate-700 dark:text-[#D1D4DC] focus:bg-white dark:focus:bg-[#1E2227] focus:ring-1 focus:ring-emerald-700 focus:outline-hidden"
             >
               <option value="">All Risk Levels</option>
               <option value="HIGH">High Risk</option>
@@ -145,7 +145,7 @@ export const Inspections: React.FC = () => {
           {(selectedZone || selectedStatus || selectedRisk || searchQuery) && (
             <button
               onClick={handleClearFilters}
-              className="flex items-center space-x-1 text-xs text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-md transition-colors"
+              className="flex items-center space-x-1 text-xs text-slate-600 dark:text-[#9A9FA8] hover:text-slate-900 dark:hover:text-[#F3F4F5] bg-slate-100 dark:bg-[#1E2227] hover:bg-slate-200 dark:hover:bg-[#252A30] px-3 py-1.5 rounded-md transition-colors"
             >
               <X className="w-3.5 h-3.5" />
               <span>Clear</span>
@@ -162,21 +162,21 @@ export const Inspections: React.FC = () => {
           {error}
         </div>
       ) : filteredCases.length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-lg p-12 text-center text-slate-500">
+        <div className="bg-white dark:bg-[#141619] border border-slate-200 dark:border-[#292C32] rounded-lg p-12 text-center text-slate-500 dark:text-[#9A9FA8]">
           <p className="text-sm font-semibold">No inspection cases match your filter criteria.</p>
-          <p className="text-xs text-slate-400 mt-1">Try resetting filters or adjusting search parameters.</p>
+          <p className="text-xs text-slate-400 dark:text-[#7A808C] mt-1">Try resetting filters or adjusting search parameters.</p>
           <button
             onClick={handleClearFilters}
-            className="mt-4 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-4 py-2 rounded-md"
+            className="mt-4 text-xs bg-slate-100 dark:bg-[#1E2227] hover:bg-slate-200 dark:hover:bg-[#252A30] text-slate-700 dark:text-[#D1D4DC] font-semibold px-4 py-2 rounded-md"
           >
             Clear All Filters
           </button>
         </div>
       ) : (
-        <div data-tour="queue-table" className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-2xs">
+        <div data-tour="queue-table" className="bg-white dark:bg-[#141619] border border-slate-200 dark:border-[#292C32] rounded-lg overflow-hidden shadow-2xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 uppercase font-semibold text-[11px] tracking-wider">
+              <thead className="bg-slate-50 dark:bg-[#181B1F] border-b border-slate-200 dark:border-[#292C32] text-slate-600 dark:text-[#9A9FA8] uppercase font-semibold text-[11px] tracking-wider">
                 <tr>
                   <th className="py-3 px-4">Priority / Consumer & Meter</th>
                   <th className="py-3 px-3">Location & Grid</th>
@@ -187,9 +187,9 @@ export const Inspections: React.FC = () => {
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-[#202328]">
                 {filteredCases.map(c => (
-                  <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
+                  <tr key={c.id} className="hover:bg-slate-50/80 dark:hover:bg-[#181B1F] transition-colors">
                     {/* Priority & Consumer */}
                     <td className="py-3.5 px-4">
                       <div className="flex items-center space-x-2 mb-1">
@@ -197,35 +197,35 @@ export const Inspections: React.FC = () => {
                       </div>
                       <Link
                         to={`/employee/inspections/${c.id}`}
-                        className="font-bold text-slate-900 hover:text-emerald-700 text-xs block"
+                        className="font-bold text-slate-900 dark:text-[#F3F4F5] hover:text-emerald-700 dark:hover:text-emerald-400 text-xs block"
                       >
                         {c.consumer_name}
                       </Link>
-                      <div className="tabular-nums text-[10px] text-slate-500 mt-0.5">
-                        SGCC Meter ID: <span className="text-slate-700 font-semibold">{c.cons_no.length > 14 ? `${c.cons_no.substring(0, 14)}...` : c.cons_no}</span>
+                      <div className="tabular-nums text-[10px] text-slate-500 dark:text-[#9A9FA8] mt-0.5">
+                        SGCC Meter ID: <span className="text-slate-700 dark:text-[#D1D4DC] font-semibold">{c.cons_no.length > 14 ? `${c.cons_no.substring(0, 14)}...` : c.cons_no}</span>
                       </div>
-                      <div className="tabular-nums text-[9px] text-slate-400 font-medium">
+                      <div className="tabular-nums text-[9px] text-slate-400 dark:text-[#7A808C] font-medium">
                         Case: {c.case_number}
                       </div>
                     </td>
 
                     {/* Location & Grid */}
                     <td className="py-3.5 px-3">
-                      <div className="font-semibold text-slate-800">{c.zone} Zone</div>
-                      <div className="text-[11px] text-slate-600 font-medium">
+                      <div className="font-semibold text-slate-800 dark:text-[#F3F4F5]">{c.zone} Zone</div>
+                      <div className="text-[11px] text-slate-600 dark:text-[#9A9FA8] font-medium">
                         {c.feeder}
                       </div>
-                      <div className="text-[10px] text-slate-400">
+                      <div className="text-[10px] text-slate-400 dark:text-[#7A808C]">
                         {c.substation}
                       </div>
                     </td>
 
                     {/* Risk Percentage */}
                     <td className="py-3.5 px-3 text-right tabular-nums">
-                      <span className="font-bold text-sm text-red-700">
+                      <span className="font-bold text-sm text-red-700 dark:text-red-400">
                         {c.theft_risk_percentage.toFixed(1)}%
                       </span>
-                      <span className="text-[10px] text-slate-400 block font-normal">Model Est.</span>
+                      <span className="text-[10px] text-slate-400 dark:text-[#7A808C] block font-normal">Model Est.</span>
                     </td>
 
                     {/* Status */}
@@ -242,17 +242,17 @@ export const Inspections: React.FC = () => {
                     <td className="py-3.5 px-3 text-[11px]">
                       {c.assigned_employee_name ? (
                         <div>
-                          <span className="font-semibold text-slate-800 block">
+                          <span className="font-semibold text-slate-800 dark:text-[#F3F4F5] block">
                             {c.assigned_employee_name}
                           </span>
                           {c.scheduled_date && (
-                            <span className="text-slate-500 tabular-nums text-[10px]">
+                            <span className="text-slate-500 dark:text-[#9A9FA8] tabular-nums text-[10px]">
                               {c.scheduled_date}
                             </span>
                           )}
                         </div>
                       ) : (
-                        <span className="text-slate-400 italic">Unassigned</span>
+                        <span className="text-slate-400 dark:text-[#7A808C] italic">Unassigned</span>
                       )}
                     </td>
 
@@ -263,7 +263,7 @@ export const Inspections: React.FC = () => {
                           <>
                             <button
                               onClick={() => setAssignTarget(c)}
-                              className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded transition-colors"
+                              className="text-xs bg-slate-100 dark:bg-[#1E2227] hover:bg-slate-200 dark:hover:bg-[#252A30] text-slate-700 dark:text-[#D1D4DC] px-2.5 py-1.5 rounded transition-colors"
                               title="Assign Squad"
                             >
                               Assign
@@ -280,7 +280,7 @@ export const Inspections: React.FC = () => {
 
                         <Link
                           to={`/employee/inspections/${c.id}`}
-                          className="text-xs text-slate-500 hover:text-slate-900 p-1.5 rounded hover:bg-slate-100"
+                          className="text-xs text-slate-500 dark:text-[#7A808C] hover:text-slate-900 dark:hover:text-[#F3F4F5] p-1.5 rounded hover:bg-slate-100 dark:hover:bg-[#1E2227]"
                           title="View Case Details"
                         >
                           <ExternalLink className="w-3.5 h-3.5" />

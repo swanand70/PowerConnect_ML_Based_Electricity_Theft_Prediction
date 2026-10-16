@@ -50,6 +50,13 @@ export const AppLayout: React.FC = () => {
     }
   }, [user]);
 
+  // Global listener for replay tour from Help or any subcomponent
+  useEffect(() => {
+    const handleOpenTour = () => setTourOpen(true);
+    window.addEventListener('open-employee-tour', handleOpenTour);
+    return () => window.removeEventListener('open-employee-tour', handleOpenTour);
+  }, []);
+
   return (
     <div
       className={`flex h-screen overflow-hidden employee-workspace transition-colors ${
