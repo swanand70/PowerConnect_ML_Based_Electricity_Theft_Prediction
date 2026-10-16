@@ -1,0 +1,70 @@
+{
+  "audit_metadata": {
+    "timestamp": "2026-10-08T17:42:56.520948",
+    "duration_seconds": 11.59,
+    "raw_dataset_path": "D:\\Desktop\\VITC-STUDY-MATERIAL\\COURSE-MATERIAL\\TY\\FALL-SEM_26-27\\PROJECTS\\PROJECT-SOFTWARE-ENGG\\archive\\data.csv",
+    "file_size_mb": 167.08
+  },
+  "dataset_dimensions": {
+    "total_rows_consumers": 42372,
+    "total_columns": 1036,
+    "metadata_columns": [
+      "CONS_NO",
+      "FLAG"
+    ],
+    "date_reading_columns": 1034,
+    "reading_frequency": "Daily (1 reading/day)",
+    "data_orientation": "Wide format (1 row per consumer, daily dates as columns)"
+  },
+  "temporal_range": {
+    "start_date": "2014-01-01",
+    "end_date": "2016-10-31",
+    "total_days_in_span": 1035,
+    "total_date_columns_present": 1034,
+    "chronologically_ordered": true
+  },
+  "target_class_distribution": {
+    "target_column": "FLAG",
+    "normal_consumers_count": 38757,
+    "theft_consumers_count": 3615,
+    "theft_prevalence_percentage": 8.53,
+    "class_ratio": "1 theft : 10.7 normal",
+    "imbalance_severity": "High class imbalance (~9% theft vs 91% normal)"
+  },
+  "data_integrity_and_duplicates": {
+    "consumer_id_column": "CONS_NO",
+    "unique_consumer_count": 42372,
+    "duplicate_consumer_ids": 0
+  },
+  "missing_value_analysis": {
+    "total_reading_cells": 43812648,
+    "missing_reading_cells": 11233528,
+    "missing_reading_percentage": 25.64,
+    "consumer_missingness_distribution": {
+      "0-10%": 20997,
+      "10-25%": 5986,
+      "25-50%": 4205,
+      "50-75%": 10790,
+      "75-100%": 394
+    }
+  },
+  "consumption_statistics_and_anomalies": {
+    "valid_readings_evaluated": 32579120,
+    "min_consumption_kwh": 0.0,
+    "max_consumption_kwh": 800003.32,
+    "mean_consumption_kwh": 9.2589,
+    "std_consumption_kwh": 273.2241,
+    "zero_consumption_readings": 5788603,
+    "zero_consumption_percentage": 17.77,
+    "negative_readings_count": 0,
+    "extreme_high_readings_count_gt_10k": 260
+  },
+  "preprocessing_recommendations": [
+    "Maintain chronological order: sort the 1,034 date columns by date ascending.",
+    "Handle missing values: Isolated missing days should use forward-fill / linear interpolation. Consumers with >80% missing data should be flagged or imputed with robust consumer-level baselines.",
+    "Negative values: Electricity consumption cannot be negative; negative values indicate metering errors or corrupted recordings and must be set to NaN or 0.",
+    "Extreme outliers: Readings above 99.9th percentile must be capped/winsorized rather than discarded, preserving legitimate industrial usage while preventing gradient explosion.",
+    "Severe class imbalance: Use class weighting in loss function and evaluate PR-AUC, Precision@K, and Recall@K rather than standard accuracy.",
+    "Feature Engineering: Extract statistical, temporal, rolling volatility, and drop/surge behavior from the time series."
+  ]
+}

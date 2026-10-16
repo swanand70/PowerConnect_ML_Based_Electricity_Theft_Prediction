@@ -1,0 +1,145 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  --public-header-height: 4rem;
+}
+
+/* Global Typography: Inter for UI, JetBrains Mono for technical codes & identifiers */
+:root {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  --public-header-height: 4rem;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html,
+body,
+#root,
+button,
+input,
+optgroup,
+select,
+textarea {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+body {
+  background-color: #0B0C0E;
+  color: #F3F4F5;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html.light body {
+  background-color: #F8F9FA;
+  color: #0F141C;
+}
+
+/* Leaflet container customization */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  border-radius: 0.5rem;
+  z-index: 10;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Scoped Employee & Operational Workspace Dark Theme Tokens */
+.dark .employee-workspace .bg-white {
+  background-color: #141619 !important;
+  color: #F3F4F5;
+}
+
+.dark .employee-workspace .bg-slate-50 {
+  background-color: #181B1F !important;
+  color: #F3F4F5;
+}
+
+.dark .employee-workspace .bg-slate-100 {
+  background-color: #1F2329 !important;
+  color: #F3F4F5;
+}
+
+.dark .employee-workspace .border-slate-100,
+.dark .employee-workspace .border-slate-200,
+.dark .employee-workspace .border-slate-300 {
+  border-color: #292C32 !important;
+}
+
+.dark .employee-workspace .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+.dark .employee-workspace .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #202328 !important;
+}
+
+.dark .employee-workspace .text-slate-900,
+.dark .employee-workspace .text-slate-800 {
+  color: #F3F4F5 !important;
+}
+
+.dark .employee-workspace .text-slate-700,
+.dark .employee-workspace .text-slate-600 {
+  color: #9A9FA8 !important;
+}
+
+.dark .employee-workspace .text-slate-500 {
+  color: #717784 !important;
+}
+
+.dark .employee-workspace input,
+.dark .employee-workspace select,
+.dark .employee-workspace textarea {
+  background-color: #141619 !important;
+  border-color: #292C32 !important;
+  color: #F3F4F5 !important;
+}
+
+.dark .employee-workspace table thead {
+  background-color: #0B0C0E !important;
+  border-color: #292C32 !important;
+}
+
+.dark .employee-workspace table tr {
+  border-color: #202328 !important;
+}
+
+.dark .employee-workspace table tr:hover {
+  background-color: #181B1F !important;
+}

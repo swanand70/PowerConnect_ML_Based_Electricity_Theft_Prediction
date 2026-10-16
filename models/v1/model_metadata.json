@@ -1,0 +1,263 @@
+{
+  "model_version": "v1.0.0",
+  "dataset_version": "SGCC-2016-Clean-v1",
+  "feature_version": "v1.0",
+  "training_timestamp": "2026-10-08T17:54:06.771510+00:00",
+  "algorithm": "XGBoost Classifier (Class-Weighted)",
+  "feature_columns": [
+    "data_quality_score",
+    "missing_reading_ratio",
+    "mean_consumption",
+    "median_consumption",
+    "std_consumption",
+    "var_consumption",
+    "min_consumption",
+    "max_consumption",
+    "consumption_range",
+    "coeff_of_variation",
+    "skewness",
+    "kurtosis",
+    "volatility_daily_diff",
+    "max_daily_drop",
+    "max_daily_surge",
+    "zero_consumption_ratio",
+    "low_consumption_ratio",
+    "abnormal_consumption_ratio",
+    "autocorr_lag1",
+    "autocorr_lag7",
+    "trend_slope",
+    "recent_vs_historical_ratio",
+    "weekday_weekend_ratio",
+    "quarterly_variance_ratio",
+    "q25_consumption",
+    "q75_consumption",
+    "iqr_consumption",
+    "top10_percent_share"
+  ],
+  "hyperparameters": {
+    "n_estimators": 150,
+    "max_depth": 6,
+    "learning_rate": 0.08,
+    "scale_pos_weight": 10.718688265507705,
+    "eval_metric": "aucpr"
+  },
+  "threshold": 0.65,
+  "status": "ACTIVE",
+  "validation_metrics": {
+    "threshold": 0.65,
+    "precision": 0.3794,
+    "recall": 0.3801,
+    "f1": 0.3797
+  },
+  "test_metrics": {
+    "precision": 0.3889,
+    "recall": 0.3616,
+    "f1": 0.3748,
+    "roc_auc": 0.7758,
+    "pr_auc": 0.3164,
+    "false_positive_rate": 0.053,
+    "false_negative_rate": 0.6384,
+    "confusion_matrix": {
+      "true_negatives": 5506,
+      "false_positives": 308,
+      "false_negatives": 346,
+      "true_positives": 196
+    },
+    "precision_recall_at_k": {
+      "K=100": {
+        "inspections_capacity_k": 100,
+        "confirmed_theft_cases": 55,
+        "precision_at_k": 0.55,
+        "recall_at_k": 0.1015
+      },
+      "K=200": {
+        "inspections_capacity_k": 200,
+        "confirmed_theft_cases": 97,
+        "precision_at_k": 0.485,
+        "recall_at_k": 0.179
+      },
+      "K=500": {
+        "inspections_capacity_k": 500,
+        "confirmed_theft_cases": 195,
+        "precision_at_k": 0.39,
+        "recall_at_k": 0.3598
+      },
+      "K=1000": {
+        "inspections_capacity_k": 1000,
+        "confirmed_theft_cases": 269,
+        "precision_at_k": 0.269,
+        "recall_at_k": 0.4963
+      }
+    }
+  },
+  "model_comparison": {
+    "Model A (Majority Baseline)": {
+      "fit_time_seconds": 0.08,
+      "val_f1": 0.0,
+      "val_roc_auc": 0.5,
+      "val_pr_auc": 0.0853,
+      "val_precision": 0.0,
+      "val_recall": 0.0,
+      "val_top500_precision": 0.09
+    },
+    "Model B (Logistic Regression)": {
+      "fit_time_seconds": 0.33,
+      "val_f1": 0.2807,
+      "val_roc_auc": 0.7455,
+      "val_pr_auc": 0.2687,
+      "val_precision": 0.179,
+      "val_recall": 0.6494,
+      "val_top500_precision": 0.31
+    },
+    "Model C (Random Forest)": {
+      "fit_time_seconds": 1.63,
+      "val_f1": 0.3524,
+      "val_roc_auc": 0.7833,
+      "val_pr_auc": 0.332,
+      "val_precision": 0.283,
+      "val_recall": 0.4668,
+      "val_top500_precision": 0.362
+    },
+    "Model D (XGBoost Balanced)": {
+      "fit_time_seconds": 0.97,
+      "val_f1": 0.3395,
+      "val_roc_auc": 0.7835,
+      "val_pr_auc": 0.3605,
+      "val_precision": 0.2507,
+      "val_recall": 0.5258,
+      "val_top500_precision": 0.392
+    }
+  },
+  "imbalance_experiments": {
+    "Exp A (No Balancing)": {
+      "precision": 0.6961,
+      "recall": 0.131,
+      "f1": 0.2205,
+      "pr_auc": 0.3746,
+      "roc_auc": 0.7897
+    },
+    "Exp B (Class Weighting)": {
+      "precision": 0.2507,
+      "recall": 0.5258,
+      "f1": 0.3395,
+      "pr_auc": 0.3605,
+      "roc_auc": 0.7835
+    },
+    "Exp C (SMOTE on Train Only)": {
+      "precision": 0.2797,
+      "recall": 0.3948,
+      "f1": 0.3275,
+      "pr_auc": 0.3146,
+      "roc_auc": 0.7494
+    }
+  },
+  "strategy_comparison": {
+    "Strategy 1 (Random Selection)": {
+      "top_500_inspections_precision": 0.08,
+      "top_500_confirmed_thefts": 40,
+      "efficiency_multiplier": "1.0x (Baseline)"
+    },
+    "Strategy 2 (Highest ML Risk)": {
+      "top_500_inspections_precision": 0.39,
+      "top_500_confirmed_thefts": 195,
+      "efficiency_multiplier": "4.9x"
+    },
+    "Strategy 3 (Operational Priority)": {
+      "top_500_inspections_precision": 0.372,
+      "top_500_confirmed_thefts": 186,
+      "efficiency_multiplier": "4.6x"
+    }
+  },
+  "global_shap_importance": [
+    {
+      "rank": 1,
+      "feature": "quarterly_variance_ratio",
+      "importance_score": 0.4553,
+      "description": "quarterly_variance_ratio"
+    },
+    {
+      "rank": 2,
+      "feature": "missing_reading_ratio",
+      "importance_score": 0.2433,
+      "description": "missing_reading_ratio"
+    },
+    {
+      "rank": 3,
+      "feature": "autocorr_lag1",
+      "importance_score": 0.2225,
+      "description": "autocorr_lag1"
+    },
+    {
+      "rank": 4,
+      "feature": "data_quality_score",
+      "importance_score": 0.2014,
+      "description": "data_quality_score"
+    },
+    {
+      "rank": 5,
+      "feature": "trend_slope",
+      "importance_score": 0.1864,
+      "description": "trend_slope"
+    },
+    {
+      "rank": 6,
+      "feature": "autocorr_lag7",
+      "importance_score": 0.1699,
+      "description": "autocorr_lag7"
+    },
+    {
+      "rank": 7,
+      "feature": "coeff_of_variation",
+      "importance_score": 0.1638,
+      "description": "coeff_of_variation"
+    },
+    {
+      "rank": 8,
+      "feature": "consumption_range",
+      "importance_score": 0.1555,
+      "description": "consumption_range"
+    },
+    {
+      "rank": 9,
+      "feature": "abnormal_consumption_ratio",
+      "importance_score": 0.1548,
+      "description": "abnormal_consumption_ratio"
+    },
+    {
+      "rank": 10,
+      "feature": "max_consumption",
+      "importance_score": 0.1518,
+      "description": "max_consumption"
+    },
+    {
+      "rank": 11,
+      "feature": "recent_vs_historical_ratio",
+      "importance_score": 0.1097,
+      "description": "recent_vs_historical_ratio"
+    },
+    {
+      "rank": 12,
+      "feature": "kurtosis",
+      "importance_score": 0.1063,
+      "description": "kurtosis"
+    },
+    {
+      "rank": 13,
+      "feature": "weekday_weekend_ratio",
+      "importance_score": 0.0921,
+      "description": "weekday_weekend_ratio"
+    },
+    {
+      "rank": 14,
+      "feature": "max_daily_surge",
+      "importance_score": 0.0829,
+      "description": "max_daily_surge"
+    },
+    {
+      "rank": 15,
+      "feature": "q25_consumption",
+      "importance_score": 0.0724,
+      "description": "q25_consumption"
+    }
+  ]
+}

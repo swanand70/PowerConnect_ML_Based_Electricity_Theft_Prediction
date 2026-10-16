@@ -1,0 +1,367 @@
+Software Engineering Project: Review-1 Report 
+
+1. Project & Team Information 
+
+❖  Project Title: AI Based Electricity Theft Detection System 
+
+❖  Team Information: Swanand A. Siknis (Reg No. 24BRS1358) 
+
+Repository Link: https://github.com/swanand70/grid-guard-ai.git 
+
+2. Project Overview 
+
+Problem Statement:  
+
+The  problem  that  I  am  addressing  in  this  project  is  Electricity  theft  and  improving  the 
+
+consumption experience of the consumers of electricity. 
+
+So, traditionally all the electricity distribution boards used to use normal meters to keep track 
+
+of the electricity consumption of consumers.  In those traditional meters, the monthly  usage 
+
+could be tracked only. So, the problem was that some industries or some individuals in rural 
+
+areas  used 
+
+to  bypass 
+
+the  meters  so 
+
+that 
+
+their  consumption 
+
+is  not 
+
+recorded. 
+
+This  problem  is  solved  by  the  smart  meters,  which  record  the  daily  and  hourly  usage  data. 
+
+Based on this data a ML model could be trained that will assist the employees of the electricity 
+
+board in making smart decisions. 
+
+Proposed Solution:  
+
+Using this improvement in technology, I am planning to build a ML model that will train on 
+
+that data and will provide the board employees important theft related insights that will assist 
+
+them in efficient decision making. 
+
+I am also adding a consumer module in this that will assist them based on their usage data. 
+
+It will include usage and cost saving suggestions and billing due date alerts and energy 
+
+optimisation strategies sent to them via notifications. 
+
+3. Review of Related Works 
+
+Existing Solutions:  
+
+1.  Petrlik, Lezama, et al. (2022) in their research paper, Electricity Theft Detecting using 
+
+Machine  Learning  have  said  that  they  tested  5  machine  learning  models  against  the 
+
+SGCC dataset which had approx. 42000 records that time. Their research focused on 
+
+suggesting the best prediction model using Machine Learning in electrical energy theft. 
+
+Their study aims to determine the most effective machine learning models to identify 
+
+fraudulent  consumption  patterns.  During  data  preprocessing  they  handled  missing 
+
+values using interpolation / mean imputation and corrected extreme outliers via 3 sigma 
+
+rules. Using Support Vector Machine (SVM) they obtained an accuracy of 81%, using 
+
+Random Forest they obtained an accuracy of 80%, using K-Nearest Neighbours they 
+
+obtained a accuracy of 79%, using Logistic Regression they obtained an accuracy of 
+
+69% and using Naïve Bayes they obtained an accuracy of 68%. 
+
+2.  In the regions (most remote places in India), that smart meters are not available some 
+
+of the existing solutions include combining computer vision and Machine Learning and 
+
+with the help of rovers or cameras deployed we can check  if they are bypassing the 
+
+electricity meters using hooks directly to the wires. Although this exists, but it is not 
+
+that  suitable  anymore,  if  we  consider  applications  in  industrial  areas  where  theft  is 
+
+considerable. 
+
+3.  Chung  Tsao,  Rahmalia  and  Chyi  Lu  in  their  research  paper  Machine-learning 
+
+techniques for enhancing electricity theft detection considering transformer reliability 
+
+and  supply  interruptions  (2024)  talk  about  the  application  of  advanced  Machine 
+
+Learning techniques to detect electricity theft. They focus on the impact on supply of 
+
+electricity  and  electricity  usage  pattern.  For  that  they  have  used  the  data  analysis 
+
+techniques like decision trees and Support Vector Machines. They are using aggregated 
+
+parameters to enhance detection accuracy. 
+
+4.  Very traditional methods like physical inspection and testing on site directly, is still a 
+
+widely used way to tackle the problem of electricity theft. These methods are slow, but 
+
+they are accurate. We have to perform physical inspections in high-risk scenarios. 
+
+5.  On  the  contrary,  very  modern  deep  learning  methods  have  been  explored  by 
+
+researchers. Some of them include CNN, LSTM and hybrid CNN-LSTM models for 
+
+detecting more complex consumption patterns. 
+
+6.  In  India,  in  the  past  few  year  lots  of  IoT  innovation  had  been  seen  that  combines 
+
+computer vision, YOLO, and other robotic perception concepts along with ML to solve 
+
+the problem of electricity theft. Such robots are costly, but they are multipurpose, they 
+
+can  be  used  for  industrial  inspections  and  substation  inspections  also.  Their  only 
+
+disadvantage is that they are costly.  
+
+Gap Analysis: 
+
+There are quite a few gaps that my project addresses: 
+
+1.  The ML-based systems that I have mentioned above mainly give a theft prediction, 
+
+but do not clearly explain why a consumer was flagged.  
+
+2.  Existing  solutions  mostly  only  identify  suspicious  consumption  instead  of 
+
+supporting the complete process after detection which includes decision advice and 
+
+assistance to the utility employees.  
+
+3.  We  must  classify  consumers  based  on  risk  level  so  that  high-risk  cases  can  be 
+
+handled first.  
+
+4.  Physical  inspection  is  still  an  important  part  of  verification,  but  it  is  often  not 
+
+properly connected with the automated detection system.  
+
+5.  I  am  handling  meter  reading  analysis,  ML  integration,  AI  predictions  (both  for 
+
+employees and consumers), and a dedicated consumer dashboard all at once, on a 
+
+single platform. 
+
+6.  There  is  a  gap  between  research-level  ML  models  and  a  practical  interface  that 
+
+utility employees can actually use for monitoring and taking action. 
+
+4. Novelty & Value Proposition 
+
+The thing that makes this project unique is the fact that, it used the smart meter data to train the 
+
+ML model instead of traditional meters. A ML model could be trained on traditional meter data 
+
+as well but smart meters are a new technology that has been brought into use very recently. It 
+
+lets us analyse the usage data on a daily and hourly basis, and hence produces more accurate 
+
+results. 
+
+Moreover I am integrating a consumer module in it as will which makes it a one stop solution 
+
+for consumers and employees for smart energy management. 
+
+The ML model trained on smart meter data rather than the traditional meter data makes this 
+
+project unique and interesting.  
+
+This  project  will  ease  the  decision-making  process  of  the  electricity  board  employees  by 
+
+flagging the theft risks calculated. Based on the obtained risk analysis they will be able to plan 
+
+inspections only in high and medium risk cases. 
+
+The consumer side of the project will be very helpful as it will provide bill due date alerts, 
+
+suggestions  to  save  energy,  detect  patterns  in  the  consumptions  that  users  may  miss  (by 
+
+patterns, I mean, there might be certain behaviours that might lead to consumers using more 
+
+electricity). 
+
+5. Technical Specifications  
+
+Tech Stack:  
+
+❖  Frontend: React-based web dashboard both for consumers and utility employees. 
+
+❖  Backend: Python with FastAPI for APIs and system logic.  
+
+❖  Database: Stores consumer, meter, prediction and inspection data.  
+
+❖  Machine Learning: Random Forest for electricity theft prediction.  
+
+❖  AI: LLM-based component for generating explanations from the ML prediction and risk 
+
+factors.  
+
+❖  Deployment: Local development/testing environment. 
+
+System Architecture: 
+
+This project will contain multiple modules with each module having its own core functionality: 
+
+❖  Smart meter data is collected and processed by the backend. 
+
+❖  The data is stored and managed in MySQL database. 
+
+❖  The stored data is analysed and processed by the Random Forest ML model to predict 
+
+the electricity theft risk. 
+
+❖  Based off that, the electricity theft risk is calculated and predictions are made by the AI 
+
+using FastAPI backend. I will handle that part of the logical implementation. 
+
+❖  The  AI  model  will  also  generate  explanations  to  the  risk  factors  and  reason  its 
+
+prediction properly. 
+
+❖  After that the high-risk cases will be sent for the field inspection and results will be 
+
+stored  in  the  database.  (If  integration  of  Reinforcement  Learning  is  possible  in  the 
+
+future in this project, it will prove to be a huge advantage, as the ML model will keep 
+
+learning newer patterns constantly and will produce more accurate results). 
+
+Fig 1. High Level System Architecture Diagram 
+
+6. Current Progress & Implementation 
+
+Completed  Modules:  I  have  100%  completed  the  frontend  of  the  project  and  have  started 
+
+working on the backend, and the data cleaning that will be required for the ML model training, 
+
+I have currently used some of that sample data in the frontend, I have used a local database 
+
+here to display the data. 
+
+❖  Main dashboard UI  
+
+❖  Consumer management UI  
+
+❖  Suspicious consumer/risk display UI  
+
+❖  Theft prediction results UI  
+
+❖  Field inspection management UI  
+
+ 
+❖  Investigation/report UI  
+
+❖  Notifications and system settings UI  
+
+❖  Overall navigation and responsive frontend layout 
+
+Screenshots:  
+
+Employee Dashboard: 
+
+Consumer Dashboard: 
+
+   
+7. Challenges & Next Steps  
+
+Challenges Faced:  
+
+1.  The biggest challenge that I am facing right now is data collection and preprocessing. 
+
+2.  But now, I have decided to go ahead with the SGCC dataset available on GitHub. 
+
+3.  Still, I am looking for a better dataset will more values and that should be more relevant 
+
+to the Indian consumer. 
+
+4.  If in future I find a better dataset then I shall continue with that data. 
+
+Pending Deliverables: As, I have completely finished with the frontend aspect of the project 
+
+the key pending deliverables remain: 
+
+1.  Data storage in MySQL database. 
+
+2.  ML model training based on the available data 
+
+3.  Backend logic implementation  and API  integration (I have started work on this  part 
+
+already). 
+
+4.  Connecting the existing frontend with backend. 
+
+5.  AI explanation and integration with the ML prediction. 
+
+ 
+ 
+ 
+Timeline to Completion: 
+
+❖  By September 5: Complete backend APIs and MySQL database integration.  
+
+❖  By September 12: Complete data preprocessing and train/evaluate the ML model.  
+
+❖  By September 19: Integrate the ML predictions with the backend and frontend.  
+
+❖  By  September  23:  Implement  the  AI-based  explanation  module  and  complete 
+
+system integration.  
+
+❖  By October 4: Testing, debugging and fixing remaining issues.  
+
+❖  October 5-10: Final documentation, screenshots and report preparation and final 
+
+project submission. 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+References 
+
+Petrlik  Azabache,  Ivan  &  Lezama, Pedro &  Rodriguez, Ciro &  Inquilla, Ricardo &  Reyna-
+
+Gonzalez,  Julissa  &  Esparza,  Roberto.  (2022).  Electricity  Theft  Detection  using  Machine 
+
+Learning.  International  Journal  of  Advanced  Computer  Science  and  Applications.  13. 
+
+10.14569/IJACSA.2022.0131251.  
+
+Tsao,  Y.  C.,  Rahmalia,  D.,  &  Lu,  J.  C.  (2024).  Machine-learning  techniques  for  enhancing 
+
+electricity theft detection considering transformer reliability and supply interruptions. Energy 
+
+Reports, 12, 3048-3064. 
+
+SGCC Dataset (State Grid Corporation of China). 
+
+

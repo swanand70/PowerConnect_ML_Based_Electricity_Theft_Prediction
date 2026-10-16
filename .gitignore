@@ -1,0 +1,36 @@
+# Environments & secrets
+.env
+.env.*
+!.env.example
+*.pem
+credentials
+secrets
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node / Frontend
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+build/
+.oxlintrc.json
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Large raw & interim datasets (>100MB)
+archive/
+data/interim/
+data/raw/
+scratch/

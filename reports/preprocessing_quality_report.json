@@ -1,0 +1,25 @@
+{
+  "preprocessing_metadata": {
+    "timestamp": "2026-10-08T17:48:27.769894+00:00",
+    "duration_seconds": 76.0,
+    "raw_input_path": "D:\\Desktop\\VITC-STUDY-MATERIAL\\COURSE-MATERIAL\\TY\\FALL-SEM_26-27\\PROJECTS\\PROJECT-SOFTWARE-ENGG\\archive\\data.csv",
+    "interim_output_path": "D:\\Desktop\\VITC-STUDY-MATERIAL\\COURSE-MATERIAL\\TY\\FALL-SEM_26-27\\PROJECTS\\PROJECT-SOFTWARE-ENGG\\data\\interim\\clean_readings.csv",
+    "total_consumers_processed": 42372
+  },
+  "transformations_applied": {
+    "chronological_sorting": true,
+    "non_negative_enforcement": true,
+    "winsorization_threshold_kwh": 500.0,
+    "imputation_strategy": "Row-wise linear interpolation + forward/backward fill + zero fallback"
+  },
+  "post_processing_quality_audit": {
+    "total_null_readings_remaining": 0,
+    "min_reading_kwh": 0.0,
+    "max_reading_kwh": 500.0,
+    "data_quality_distribution": {
+      "High": 25056,
+      "Low": 9809,
+      "Moderate": 7507
+    }
+  }
+}
