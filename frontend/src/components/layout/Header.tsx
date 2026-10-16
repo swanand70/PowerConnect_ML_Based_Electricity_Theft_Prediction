@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { PowerConnectBrand } from '../common/PowerConnectLogo';
 import { NotificationCard } from '../common/NotificationCard';
 import {
   Bell,
@@ -180,27 +181,12 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         {/* Application Logo & Authority Identity */}
-        <div className="flex items-center space-x-2">
-          <div className="h-7 w-7 sm:h-8 sm:w-8 bg-emerald-700 text-white rounded flex items-center justify-center font-bold tracking-wider text-xs sm:text-sm shadow-xs shrink-0">
-            V
-          </div>
-          <div className="min-w-0">
-            <div
-              className={`font-bold text-xs sm:text-sm tracking-wide uppercase truncate ${
-                isDark ? 'text-[#F3F4F5]' : 'text-slate-900'
-              }`}
-            >
-              Vigilance & Inspection Intelligence
-            </div>
-            <div
-              className={`text-[10px] hidden xl:block leading-none truncate ${
-                isDark ? 'text-[#9A9FA8]' : 'text-slate-500'
-              }`}
-            >
-              State Electricity Distribution Transmission & Inspection Wing
-            </div>
-          </div>
-        </div>
+        <PowerConnectBrand
+          descriptor="Electricity Theft Intelligence & Inspection Platform"
+          badge="Employee Portal"
+          linkTo="/employee/dashboard"
+          size="md"
+        />
       </div>
 
       {/* 2. CENTER: Combined Workspace Navigation Strip */}

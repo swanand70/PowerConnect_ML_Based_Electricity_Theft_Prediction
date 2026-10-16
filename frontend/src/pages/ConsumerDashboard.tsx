@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { PowerConnectBrand } from '../components/common/PowerConnectLogo';
 import {
-  Zap,
   AlertCircle,
   CheckCircle2,
   Calendar,
@@ -238,35 +238,12 @@ export const ConsumerDashboard: React.FC = () => {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Brand & Portal Wordmark */}
-          <div className="flex items-center gap-3">
-            <Link to="/" className="flex items-center gap-2 group">
-              <div
-                className={`w-8 h-8 rounded-lg border flex items-center justify-center shadow-2xs transition-colors ${
-                  isDark
-                    ? 'border-[#292C32] bg-[#141619] text-[#8AA8FF] group-hover:border-[#8AA8FF]/40'
-                    : 'border-[#E2E5E9] bg-white text-[#2B59FF] group-hover:border-[#2B59FF]/40'
-                }`}
-              >
-                <Zap className="w-4 h-4" />
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-sm tracking-tight">PowerConnect</span>
-                <span className={`w-1.5 h-1.5 rounded-full ${isDark ? 'bg-[#8AA8FF]' : 'bg-[#2B59FF]'}`}></span>
-              </div>
-            </Link>
-
-            <span className={`text-xs ${isDark ? 'text-[#3E434D]' : 'text-slate-300'}`}>|</span>
-
-            <span
-              className={`text-xs font-semibold px-2.5 py-0.5 rounded-md border ${
-                isDark
-                  ? 'bg-[#141619] border-[#292C32] text-[#8AA8FF]'
-                  : 'bg-blue-50/70 border-blue-200/80 text-[#2B59FF]'
-              }`}
-            >
-              Consumer Portal
-            </span>
-          </div>
+          <PowerConnectBrand
+            descriptor="Electricity Theft Intelligence & Inspection Platform"
+            badge="Consumer Portal"
+            linkTo="/"
+            size="md"
+          />
 
           {/* User Profile & Actions */}
           <div className="flex items-center gap-2 sm:gap-3">

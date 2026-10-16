@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Shield, Lock, User, AlertCircle, ArrowLeft, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Lock, User, AlertCircle, ArrowLeft, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { PublicHeader } from '../components/layout/PublicHeader';
 import { AtmosphericBackground } from '../components/common/AtmosphericBackground';
+import { PowerConnectLogo } from '../components/common/PowerConnectLogo';
 
 export const Login: React.FC = () => {
   const [username, setUsername] = useState('emp001');
@@ -79,21 +80,13 @@ export const Login: React.FC = () => {
           >
             {/* Header / Brand Icon */}
             <div className="flex items-center gap-3 mb-6">
-              <div
-                className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 ${
-                  isDark
-                    ? 'bg-[#0B0C0E] border-[#292C32] text-[#8AA8FF]'
-                    : 'bg-blue-50 border-blue-200 text-[#2B59FF]'
-                }`}
-              >
-                <Shield className="w-5 h-5" />
-              </div>
+              <PowerConnectLogo size={40} />
               <div>
                 <h1 className="text-xl font-bold tracking-tight">
                   Employee Workspace Sign-In
                 </h1>
                 <p className={`text-xs mt-0.5 ${isDark ? 'text-[#9A9FA8]' : 'text-[#525866]'}`}>
-                  Secure access for authorised utility employees and inspection teams.
+                  PowerConnect • Authorized utility & inspection squad access
                 </p>
               </div>
             </div>

@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Shield, ArrowRight, Menu, X, Users, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { PowerConnectBrand } from '../common/PowerConnectLogo';
 
 export interface PublicHeaderProps {
   actionOverride?: {
@@ -189,56 +190,11 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({ actionOverride }) =>
         <div className="flex items-center justify-between h-16">
           {/* Left: Brand mark and wordmark */}
           <div className="flex-1 flex items-center justify-start min-w-0">
-            <Link
-              to="/"
-              className={`flex items-center space-x-3 group focus:outline-hidden focus:ring-2 rounded-lg pr-2 ${
-                isDark ? 'focus:ring-[#8AA8FF]/50' : 'focus:ring-[#2B59FF]/30'
-              }`}
-            >
-              <div
-                className={`w-8 h-8 rounded-lg border flex items-center justify-center shadow-xs transition-colors shrink-0 ${
-                  isDark
-                    ? 'bg-[#141619] border-[#292C32] text-[#8AA8FF] group-hover:border-[#8AA8FF]/50'
-                    : 'bg-white border-[#E2E5E9] text-[#2B59FF] group-hover:border-[#2B59FF]/50'
-                }`}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  className={`w-4 h-4 ${isDark ? 'text-[#8AA8FF]' : 'text-[#2B59FF]'}`}
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-                </svg>
-              </div>
-
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 leading-tight">
-                  <span
-                    className={`text-base sm:text-lg font-bold tracking-tight ${
-                      isDark ? 'text-[#F3F4F5]' : 'text-[#0F141C]'
-                    }`}
-                  >
-                    PowerConnect
-                  </span>
-                  <span
-                    className={`inline-block w-1.5 h-1.5 rounded-full mb-0.5 ${
-                      isDark ? 'bg-[#8AA8FF]' : 'bg-[#2B59FF]'
-                    }`}
-                  />
-                </div>
-                <span
-                  className={`text-[11px] font-medium block leading-tight truncate ${
-                    isDark ? 'text-[#9A9FA8]' : 'text-[#525866]'
-                  }`}
-                >
-                  Electricity Services & Vigilance
-                </span>
-              </div>
-            </Link>
+            <PowerConnectBrand
+              descriptor="Electricity Theft Intelligence & Inspection Platform"
+              linkTo="/"
+              size="md"
+            />
           </div>
 
           {/* Center: Desktop Navigation Links */}

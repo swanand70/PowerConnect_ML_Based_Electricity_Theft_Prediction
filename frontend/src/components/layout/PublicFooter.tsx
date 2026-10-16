@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, Phone, ArrowUpRight } from 'lucide-react';
+import { PowerConnectLogo } from '../common/PowerConnectLogo';
 
 export const PublicFooter: React.FC = () => {
   return (
@@ -10,22 +11,15 @@ export const PublicFooter: React.FC = () => {
           {/* Brand and overview */}
           <div className="md:col-span-2 space-y-3">
             <div className="flex items-center space-x-2.5">
-              <div className="w-7 h-7 rounded-lg border border-[#292C32] bg-[#141619] text-[#8AA8FF] flex items-center justify-center shadow-xs">
-                <svg
-                  viewBox="0 0 24 24"
-                  className="w-3.5 h-3.5 text-[#8AA8FF]"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-                </svg>
+              <PowerConnectLogo size={28} />
+              <div>
+                <span className="text-sm font-bold tracking-tight text-[#F3F4F5] block">
+                  PowerConnect
+                </span>
+                <span className="text-[10px] text-[#9A9FA8] block">
+                  Electricity Theft Intelligence & Inspection Platform
+                </span>
               </div>
-              <span className="text-sm font-bold tracking-tight text-[#F3F4F5]">
-                PowerConnect
-              </span>
             </div>
             <p className="text-xs leading-relaxed max-w-md text-[#9A9FA8]">
               A unified digital gateway for consumers, utility employees and official board updates. Built for modern electricity distribution management and intelligence.

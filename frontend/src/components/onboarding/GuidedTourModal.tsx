@@ -5,7 +5,6 @@ import {
   ArrowRight,
   ArrowLeft,
   X,
-  Compass,
   CheckCircle2,
   ExternalLink,
   GripHorizontal
@@ -13,6 +12,7 @@ import {
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { PowerConnectLogo } from '../common/PowerConnectLogo';
 
 interface GuidedTourModalProps {
   isOpen: boolean;
@@ -540,10 +540,8 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
         <div className="bg-white dark:bg-[#141619] border border-slate-200 dark:border-[#292C32] rounded-xl max-w-lg w-full shadow-2xl overflow-hidden p-6 sm:p-7">
-          <div className="flex justify-between items-start">
-            <div className="h-11 w-11 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/60 rounded-lg flex items-center justify-center mb-4">
-              <Compass className="w-6 h-6" />
-            </div>
+          <div className="flex justify-between items-start mb-4">
+            <PowerConnectLogo size={44} />
             <button
               onClick={handleCompleteOrSkip}
               className="text-slate-400 dark:text-[#7A808C] hover:text-slate-600 dark:hover:text-[#F3F4F5] p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-[#1E2227] transition-colors"
@@ -554,10 +552,10 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
           </div>
 
           <h3 className="text-lg font-bold text-slate-900 dark:text-[#F3F4F5] tracking-tight">
-            Vigilance & Inspection Interactive Tour
+            PowerConnect Interactive Walkthrough
           </h3>
           <p className="text-xs text-slate-600 dark:text-[#9A9FA8] mt-2 leading-relaxed">
-            Welcome to the operational workspace. This guided walkthrough moves through the live application, spotlighting key operational controls across the Priority Dashboard, Inspection Queue, GIS Map, Case Analysis, and Verified Field Audits.
+            Welcome to the PowerConnect operational workspace. This guided walkthrough moves through the live application, spotlighting key operational controls across the Priority Dashboard, Inspection Queue, GIS Map, Case Analysis, and Verified Field Audits.
           </p>
 
           <div className="mt-4 bg-slate-50 dark:bg-[#181B1F] border border-slate-200 dark:border-[#292C32] rounded-lg p-3 text-[11px] text-slate-600 dark:text-[#9A9FA8] space-y-1.5">

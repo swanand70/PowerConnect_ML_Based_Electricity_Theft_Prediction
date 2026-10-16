@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { PowerConnectBrand } from '../components/common/PowerConnectLogo';
 import {
-  Building2,
   FileText,
   PlusCircle,
   CheckCircle2,
@@ -274,24 +274,12 @@ export const BoardAdminWorkspace: React.FC = () => {
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link to="/" className="flex items-center gap-2 group">
-              <div
-                className={`w-8 h-8 rounded-lg border flex items-center justify-center shadow-xs transition-colors ${
-                  isDark
-                    ? 'border-[#292C32] bg-[#141619] text-purple-400'
-                    : 'border-[#E2E5E9] bg-white text-purple-700'
-                }`}
-              >
-                <Building2 className="w-4 h-4" />
-              </div>
-              <span className="font-bold text-sm tracking-tight">PowerConnect</span>
-            </Link>
-            <span className={`text-xs ${isDark ? 'text-[#6E737D]' : 'text-slate-300'}`}>|</span>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20">
-              Board Communication Administration
-            </span>
-          </div>
+          <PowerConnectBrand
+            descriptor="Electricity Theft Intelligence & Inspection Platform"
+            badge="Board Admin"
+            linkTo="/"
+            size="md"
+          />
 
           <div className="flex items-center gap-2.5 sm:gap-4">
             <div className="hidden sm:flex flex-col text-right">

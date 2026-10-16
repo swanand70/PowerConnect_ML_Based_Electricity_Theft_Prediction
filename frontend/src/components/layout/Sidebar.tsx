@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { PowerConnectLogo } from '../common/PowerConnectLogo';
 import {
   LayoutDashboard,
   ClipboardList,
@@ -40,14 +41,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     >
       <div className="flex flex-col flex-1 min-h-0 w-64">
         {/* Header with Title and Collapse Button */}
-        <div className="py-4 px-4 border-b border-slate-800/80 flex items-center justify-between">
-          <span className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-            Operational Workspace
-          </span>
+        <div className="py-3.5 px-4 border-b border-slate-800/80 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <PowerConnectLogo size={24} />
+            <div className="min-w-0">
+              <span className="text-xs font-bold tracking-wide text-white block truncate">
+                PowerConnect
+              </span>
+              <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase block truncate">
+                Inspection Hub
+              </span>
+            </div>
+          </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition-colors focus:outline-hidden focus:ring-1 focus:ring-slate-400"
+            className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition-colors focus:outline-hidden focus:ring-1 focus:ring-slate-400 shrink-0"
             aria-label="Collapse navigation menu"
             title="Collapse Navigation (Alt+M)"
           >
