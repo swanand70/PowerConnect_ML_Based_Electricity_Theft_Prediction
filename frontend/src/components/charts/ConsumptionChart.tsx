@@ -91,7 +91,7 @@ export const ConsumptionChart: React.FC<ConsumptionChartProps> = ({
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={readings}
-            margin={{ top: 12, right: 15, left: -15, bottom: 5 }}
+            margin={{ top: 12, right: 15, left: 10, bottom: 5 }}
             onMouseMove={(e: any) => {
               if (e?.activePayload?.[0]?.payload && onSelectReading) {
                 const item = e.activePayload[0].payload as AnnotatedDailyReading;
@@ -104,8 +104,8 @@ export const ConsumptionChart: React.FC<ConsumptionChartProps> = ({
           >
             <defs>
               <linearGradient id="consumptionGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#059669" stopOpacity={0.25} />
-                <stop offset="95%" stopColor="#059669" stopOpacity={0.0} />
+                <stop offset="5%" stopColor="#2563eb" stopOpacity={0.25} />
+                <stop offset="95%" stopColor="#2563eb" stopOpacity={0.0} />
               </linearGradient>
             </defs>
 
@@ -120,6 +120,7 @@ export const ConsumptionChart: React.FC<ConsumptionChartProps> = ({
             />
 
             <YAxis
+              width={45}
               tickLine={false}
               axisLine={false}
               tick={{ fontSize: 10, fill: isDark ? '#9A9FA8' : '#64748b' }}
@@ -187,11 +188,11 @@ export const ConsumptionChart: React.FC<ConsumptionChartProps> = ({
             <Area
               type="monotone"
               dataKey="kwh"
-              stroke="#059669"
+              stroke="#2563eb"
               strokeWidth={2}
               fillOpacity={1}
               fill="url(#consumptionGradient)"
-              activeDot={{ r: 5, fill: '#059669', stroke: '#ffffff', strokeWidth: 2 }}
+              activeDot={{ r: 5, fill: '#2563eb', stroke: '#ffffff', strokeWidth: 2 }}
               dot={(dotProps) => {
                 const { cx, cy, payload } = dotProps;
                 if (!cx || !cy) return null;

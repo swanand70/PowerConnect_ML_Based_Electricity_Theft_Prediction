@@ -31,7 +31,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   return (
     <aside
       className={`
-        fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 text-slate-300 flex flex-col justify-between border-r border-slate-800
+        fixed inset-y-0 left-0 z-40 w-64 bg-[#000814] text-[#E0FBFC] flex flex-col justify-between border-r border-[#001D3D]
         transition-all duration-200 ease-in-out shrink-0
         ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full pointer-events-none'}
         lg:static lg:shadow-none
@@ -41,22 +41,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     >
       <div className="flex flex-col flex-1 min-h-0 w-64">
         {/* Header with Title and Collapse Button */}
-        <div className="py-3.5 px-4 border-b border-slate-800/80 flex items-center justify-between">
+        <div className="py-3.5 px-4 border-b border-[#001D3D] flex items-center justify-between">
           <div className="flex items-center gap-2.5 min-w-0">
             <PowerConnectLogo size={24} />
             <div className="min-w-0">
-              <span className="text-xs font-bold tracking-wide text-white block truncate">
+              <span className="text-xs font-bold tracking-wide text-[#E0FBFC] block truncate">
                 PowerConnect
               </span>
-              <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase block truncate">
-                Inspection Hub
+              <span className="text-[10px] font-semibold tracking-wider text-[#9DB4C0] uppercase block truncate">
+                Command Centre
               </span>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition-colors focus:outline-hidden focus:ring-1 focus:ring-slate-400 shrink-0"
+            className="p-1 rounded text-[#9DB4C0] hover:text-[#E0FBFC] hover:bg-[#001D3D] transition-colors focus:outline-hidden focus:ring-1 focus:ring-[#C2DFE3]/50 shrink-0 cursor-pointer"
             aria-label="Collapse navigation menu"
             title="Collapse Navigation (Alt+M)"
           >
@@ -73,10 +73,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
-                  `flex items-center space-x-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                  `flex items-center space-x-3 px-3 py-2.5 rounded-md text-xs font-semibold transition-colors ${
                     isActive
-                      ? 'bg-emerald-800/80 text-white shadow-xs'
-                      : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60'
+                      ? 'bg-[#003566] text-[#E0FBFC] border border-[#C2DFE3]/30 shadow-xs'
+                      : 'text-[#9DB4C0] hover:text-[#E0FBFC] hover:bg-[#001D3D]/60'
                   }`
                 }
               >
@@ -89,26 +89,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       </div>
 
       {/* Intelligence Loop System Status Card */}
-      <div className="p-4 border-t border-slate-800 bg-slate-950/40 w-64">
-        <div className="flex items-center space-x-2 text-xs font-semibold text-slate-200 mb-2">
-          <Cpu className="w-3.5 h-3.5 text-emerald-400" />
+      <div className="p-4 border-t border-[#001D3D] bg-[#001D3D]/50 w-64">
+        <div className="flex items-center space-x-2 text-xs font-semibold text-[#E0FBFC] mb-2">
+          <Cpu className="w-3.5 h-3.5 text-[#E0FBFC]" />
           <span>Active Intelligence Model</span>
         </div>
-        <div className="space-y-1.5 text-[11px] text-slate-400 tabular-nums font-medium">
+        <div className="space-y-1.5 text-[11px] text-[#9DB4C0] tabular-nums font-medium">
           <div className="flex justify-between">
             <span>Model:</span>
-            <span className="text-slate-200">XGBoost v1.0.0</span>
+            <span className="text-[#E0FBFC] font-semibold">XGBoost v1.0.0</span>
           </div>
           <div className="flex justify-between">
             <span>Decision Cutoff:</span>
-            <span className="text-slate-200">0.65 (PR-AUC 0.316)</span>
+            <span className="text-[#E0FBFC] font-semibold">0.65 (PR-AUC 0.316)</span>
           </div>
-          <div className="flex items-center justify-between text-emerald-400 pt-1 border-t border-slate-800/80">
+          <div className="flex items-center justify-between text-emerald-400 pt-1 border-t border-[#001D3D]">
             <span className="flex items-center space-x-1">
-              <CheckCircle2 className="w-3 h-3" />
-              <span>Feedback Loop</span>
+              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+              <span className="text-[#E0FBFC]">Feedback Loop</span>
             </span>
-            <span className="text-[10px] uppercase font-bold tracking-wider bg-emerald-950/80 px-1 py-0.5 rounded border border-emerald-800">
+            <span className="text-[10px] uppercase font-bold tracking-wider bg-emerald-950/80 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-800">
               Active
             </span>
           </div>

@@ -71,38 +71,42 @@ export const AssignModal: React.FC<AssignModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
-      <div className="bg-white border border-slate-300 rounded-lg max-w-md w-full shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-        <div className="bg-slate-50 border-b border-slate-200 px-5 py-3.5 flex justify-between items-center">
-          <div className="flex items-center space-x-2 text-slate-800">
-            <UserCheck className="w-4 h-4 text-emerald-700" />
-            <h3 className="text-sm font-bold uppercase tracking-wide">Assign Inspection Squad</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-xs p-4">
+      <div className="bg-white dark:bg-[#001D3D] border border-slate-300 dark:border-[#003566] rounded-lg max-w-md w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="bg-slate-50 dark:bg-[#000814] border-b border-slate-200 dark:border-[#003566] px-5 py-3.5 flex justify-between items-center">
+          <div className="flex items-center space-x-2 text-slate-800 dark:text-[#E0FBFC]">
+            <UserCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <h3 className="text-xs font-bold uppercase tracking-wider">Assign Inspection Squad</h3>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600 dark:text-[#9DB4C0] dark:hover:text-[#E0FBFC] transition-colors cursor-pointer"
+            aria-label="Close dialog"
+          >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 space-y-4 text-slate-800 dark:text-[#E0FBFC]">
           {error && (
-            <div className="p-2.5 bg-red-50 border border-red-200 text-red-700 text-xs rounded">
+            <div className="p-2.5 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-xs rounded-md">
               {error}
             </div>
           )}
 
-          <div className="bg-slate-50 p-3 rounded border border-slate-200 text-xs text-slate-600">
-            <div>Case Number: <strong className="tabular-nums font-semibold text-slate-900">{caseNumber}</strong></div>
-            <div>Consumer: <strong className="text-slate-900">{consumerName}</strong></div>
+          <div className="bg-slate-50 dark:bg-[#000814] p-3 rounded-md border border-slate-200 dark:border-[#003566] text-xs text-slate-600 dark:text-[#9DB4C0]">
+            <div>Case Number: <strong className="tabular-nums font-semibold text-slate-900 dark:text-[#E0FBFC]">{caseNumber}</strong></div>
+            <div>Consumer: <strong className="text-slate-900 dark:text-[#E0FBFC]">{consumerName}</strong></div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-[#E0FBFC] mb-1">
               Select Field Officer / Squad Lead *
             </label>
             <select
               value={selectedOfficerId}
               onChange={e => setSelectedOfficerId(Number(e.target.value))}
-              className="w-full bg-white border border-slate-300 rounded px-3 py-2 text-xs focus:ring-1 focus:ring-emerald-700 focus:outline-hidden"
+              className="w-full bg-white dark:bg-[#253237] border border-slate-300 dark:border-[#5C6B73] rounded-md px-3 py-2 text-xs text-slate-900 dark:text-[#E0FBFC] focus:ring-1 focus:ring-[#003566] dark:focus:ring-[#C2DFE3] focus:outline-hidden"
               required
             >
               <option value="">-- Choose Officer --</option>
@@ -115,42 +119,43 @@ export const AssignModal: React.FC<AssignModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-[#E0FBFC] mb-1">
               Scheduled Audit Date *
             </label>
             <input
               type="date"
               value={scheduledDate}
               onChange={e => setScheduledDate(e.target.value)}
-              className="w-full bg-white border border-slate-300 rounded px-3 py-2 text-xs focus:ring-1 focus:ring-emerald-700 focus:outline-hidden"
+              className="w-full bg-white dark:bg-[#253237] border border-slate-300 dark:border-[#5C6B73] rounded-md px-3 py-2 text-xs text-slate-900 dark:text-[#E0FBFC] focus:ring-1 focus:ring-[#003566] dark:focus:ring-[#C2DFE3] focus:outline-hidden"
               required
-            />
+            >
+            </input>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-[#E0FBFC] mb-1">
               Squad Instructions / Notes
             </label>
             <textarea
               value={instructions}
               onChange={e => setInstructions(e.target.value)}
               rows={3}
-              className="w-full bg-white border border-slate-300 rounded px-3 py-2 text-xs focus:ring-1 focus:ring-emerald-700 focus:outline-hidden"
+              className="w-full bg-white dark:bg-[#253237] border border-slate-300 dark:border-[#5C6B73] rounded-md px-3 py-2 text-xs text-slate-900 dark:text-[#E0FBFC] focus:ring-1 focus:ring-[#003566] dark:focus:ring-[#C2DFE3] focus:outline-hidden"
             />
           </div>
 
-          <div className="flex justify-end space-x-2 pt-2 border-t border-slate-100">
+          <div className="flex justify-end space-x-2 pt-2 border-t border-slate-100 dark:border-[#003566]">
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded"
+              className="px-3.5 py-2 text-xs font-semibold text-slate-600 dark:text-[#9DB4C0] hover:bg-slate-100 dark:hover:bg-[#253237] hover:text-slate-900 dark:hover:text-[#E0FBFC] rounded-md transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-4 py-2 rounded flex items-center space-x-1.5 transition-colors shadow-xs"
+              className="bg-[#003566] hover:bg-[#001D3D] text-white text-xs font-semibold px-4 py-2 rounded-md flex items-center space-x-1.5 transition-colors shadow-xs cursor-pointer border border-[#C2DFE3]/20 disabled:opacity-50"
             >
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>{loading ? 'Assigning...' : 'Confirm Assignment'}</span>

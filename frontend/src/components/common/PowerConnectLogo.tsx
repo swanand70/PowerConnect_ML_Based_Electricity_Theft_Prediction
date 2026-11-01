@@ -40,7 +40,7 @@ export const PowerConnectLogo: React.FC<PowerConnectLogoProps> = ({
   return (
     <div
       style={{ width: size, height: size }}
-      className={`rounded-lg bg-gradient-to-br from-emerald-600 via-teal-600 to-blue-600 flex items-center justify-center text-white shadow-xs shrink-0 select-none ${className}`}
+      className={`rounded-lg bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white shadow-xs shrink-0 select-none ${className}`}
       aria-hidden="true"
     >
       <svg
@@ -74,7 +74,7 @@ export interface PowerConnectBrandProps {
  * Used across Employee, Consumer, Board and Public surfaces
  */
 export const PowerConnectBrand: React.FC<PowerConnectBrandProps> = ({
-  descriptor = 'Electricity Theft Intelligence & Inspection Platform',
+  descriptor = 'Electricity Utility Management Platform',
   badge,
   linkTo = '/',
   size = 'md',
@@ -100,7 +100,7 @@ export const PowerConnectBrand: React.FC<PowerConnectBrandProps> = ({
             PowerConnect
           </span>
           <span
-            className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"
+            className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0"
             aria-hidden="true"
           />
           {badge && (

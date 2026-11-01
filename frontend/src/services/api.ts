@@ -23,6 +23,10 @@ import type {
   ConsumerProfile,
   ConsumerUsage,
   BillItem,
+  PaymentTransactionItem,
+  CreatePaymentOrderResponse,
+  VerifyPaymentRequest,
+  VerifyPaymentResponse,
   ConsumerIssueItem,
   IssueCreatePayload,
   IssueResolvePayload,
@@ -254,6 +258,58 @@ class ApiClient {
 
   async getBillDetail(billId: number): Promise<BillItem> {
     return this.request<BillItem>(`/billing/${billId}`);
+  }
+
+  async createPaymentOrder(billId: number, amountInr: number, idempotencyKey?: string): Promise<CreatePaymentOrderResponse> {
+    return this.request<CreatePaymentOrderResponse>(`/billing/${billId}/payments/order`, {
+      method: 'POST',
+      body: JSON.stringify({ amount_inr: amountInr, idempotency_key: idempotencyKey })
+    });
+  }
+
+  async verifyPayment(payload: VerifyPaymentRequest): Promise<VerifyPaymentResponse> {
+    return this.request<VerifyPaymentResponse>('/billing/payments/verify', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
+  async getBillPayments(billId: number): Promise<PaymentTransactionItem[]> {
+    return this.request<PaymentTransactionItem[]>(`/billing/${billId}/payments`);
+  }
+
+  async downloadBillPdf(billId: number): Promise<Blob> {
+    const token = this.getToken();
+    const response = await fetch(`${API_BASE}/billing/${billId}/pdf`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      }
+    });
+    if (!response.ok) {
+      const errJson = await response.json().catch(() => ({ detail: 'Failed to download bill PDF' }));
+      throw new Error(errJson.detail || 'Failed to download bill PDF');
+    }
+    return response.blob();
+  }
+
+  async downloadPaymentReceiptPdf(paymentId: number): Promise<Blob> {
+    const token = this.getToken();
+    const response = await fetch(`${API_BASE}/billing/payments/${paymentId}/receipt`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      }
+    });
+    if (!response.ok) {
+      const errJson = await response.json().catch(() => ({ detail: 'Failed to download payment receipt PDF' }));
+      throw new Error(errJson.detail || 'Failed to download payment receipt PDF');
+    }
+    return response.blob();
+  }
+
+  async payBill(billId: number): Promise<{ message: string; status: string }> {
+    return this.request<{ message: string; status: string }>(`/billing/${billId}/pay`, {
+      method: 'POST'
+    });
   }
 
   async getMyIssues(): Promise<ConsumerIssueItem[]> {

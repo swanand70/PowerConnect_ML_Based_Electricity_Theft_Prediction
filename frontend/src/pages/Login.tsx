@@ -188,7 +188,7 @@ export const Login: React.FC = () => {
                 <span>Demonstration Inspection Credentials</span>
               </div>
               <p className="text-[11px] leading-relaxed">
-                Field Officers: <strong className="font-mono">emp001</strong> through <strong className="font-mono">emp020</strong>
+                Field Officers: <strong className="tabular-nums font-semibold">emp001</strong> through <strong className="tabular-nums font-semibold">emp020</strong>
                 <br />
                 Password: <code className="font-mono text-[11px]">Utility@2026</code>
               </p>

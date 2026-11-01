@@ -73,6 +73,7 @@ class Consumer(Base):
     predictions = relationship("Prediction", back_populates="consumer")
     inspection_cases = relationship("InspectionCase", back_populates="consumer")
     bills = relationship("Bill", back_populates="consumer")
+    payments = relationship("PaymentTransaction", back_populates="consumer")
     issues = relationship("ConsumerIssue", back_populates="consumer")
 
 class Meter(Base):
@@ -253,12 +254,55 @@ class Bill(Base):
     billing_period_end = Column(Date, nullable=False)
     units_consumed_kwh = Column(Numeric(10, 2), nullable=False)
     amount_inr = Column(Numeric(10, 2), nullable=False)
+    paid_amount_inr = Column(Numeric(10, 2), default=0.0, nullable=False)
     due_date = Column(Date, nullable=False)
-    status = Column(Enum("PENDING", "PAID", "OVERDUE", name="bill_status"), default="PENDING", nullable=False, index=True)
+    status = Column(Enum("PENDING", "PARTIALLY_PAID", "PAID", "OVERDUE", name="bill_status"), default="PENDING", nullable=False, index=True)
     paid_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     consumer = relationship("Consumer", back_populates="bills")
+    payments = relationship("PaymentTransaction", back_populates="bill", cascade="all, delete-orphan", order_by="desc(PaymentTransaction.created_at)")
+
+    @property
+    def outstanding_amount_inr(self) -> float:
+        orig = float(self.amount_inr or 0.0)
+        paid = float(self.paid_amount_inr or 0.0)
+        return max(0.0, round(orig - paid, 2))
+
+class PaymentTransaction(Base):
+    __tablename__ = "payment_transactions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    bill_id = Column(Integer, ForeignKey("bills.id", ondelete="CASCADE"), nullable=False, index=True)
+    consumer_id = Column(Integer, ForeignKey("consumers.id", ondelete="CASCADE"), nullable=False, index=True)
+    receipt_number = Column(String(64), unique=True, nullable=False, index=True)
+    amount_inr = Column(Numeric(10, 2), nullable=False)
+    amount_paise = Column(Integer, nullable=False)
+    currency = Column(String(10), default="INR", nullable=False)
+    status = Column(Enum("CREATED", "ATTEMPTED", "SUCCESS", "FAILED", "CANCELLED", name="payment_status"), default="CREATED", nullable=False, index=True)
+    razorpay_order_id = Column(String(100), unique=True, nullable=True, index=True)
+    razorpay_payment_id = Column(String(100), unique=True, nullable=True, index=True)
+    razorpay_signature = Column(String(255), nullable=True)
+    idempotency_key = Column(String(100), unique=True, nullable=True, index=True)
+    payment_method = Column(String(50), nullable=True)
+    error_code = Column(String(100), nullable=True)
+    error_description = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    verified_at = Column(DateTime, nullable=True)
+
+    bill = relationship("Bill", back_populates="payments")
+    consumer = relationship("Consumer", back_populates="payments")
+
+class RazorpayWebhookEvent(Base):
+    __tablename__ = "razorpay_webhook_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    event_id = Column(String(100), unique=True, nullable=False, index=True)
+    event_type = Column(String(100), nullable=False, index=True)
+    order_id = Column(String(100), nullable=True, index=True)
+    payment_id = Column(String(100), nullable=True, index=True)
+    payload_json = Column(JSON, nullable=True)
+    processed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 class ConsumerIssue(Base):
     __tablename__ = "consumer_issues"

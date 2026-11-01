@@ -60,13 +60,13 @@ export const AppLayout: React.FC = () => {
   return (
     <div
       className={`flex h-screen overflow-hidden employee-workspace transition-colors ${
-        isDark ? 'bg-[#0B0C0E] text-[#F3F4F5]' : 'bg-slate-100 text-slate-800'
+        isDark ? 'bg-[#000814] text-[#E0FBFC]' : 'bg-[#F4F9FA] text-[#001D3D]'
       }`}
     >
       {/* Mobile/Tablet Backdrop overlay when sidebar is open */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-slate-950/50 z-35 lg:hidden backdrop-blur-xs transition-opacity"
+          className="fixed inset-0 bg-slate-950/60 z-35 lg:hidden backdrop-blur-xs transition-opacity"
           onClick={closeSidebar}
           aria-hidden="true"
         />
@@ -84,7 +84,7 @@ export const AppLayout: React.FC = () => {
         />
         <main
           className={`flex-1 overflow-y-auto p-4 sm:p-6 transition-all duration-200 ${
-            isDark ? 'bg-[#0B0C0E] text-[#F3F4F5]' : 'bg-slate-50 text-slate-800'
+            isDark ? 'bg-[#000814] text-[#E0FBFC]' : 'bg-[#F4F9FA] text-[#001D3D]'
           }`}
         >
           <Outlet />

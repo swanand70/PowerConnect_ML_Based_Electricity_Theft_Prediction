@@ -35,6 +35,13 @@ class Settings(BaseSettings):
     MODEL_DIR: str = "models/v1"
     ACTIVE_MODEL_VERSION: str = "v1.0.0"
 
+    # Razorpay Gateway (Backend Only - Never Expose Key Secret to Frontend)
+    RAZORPAY_KEY_ID: str = ""
+    RAZORPAY_KEY_SECRET: str = ""
+    RAZORPAY_WEBHOOK_SECRET: str = ""
+    RAZORPAY_CURRENCY: str = "INR"
+    RAZORPAY_PAYMENT_MODE: str = "test"
+
     model_config = SettingsConfigDict(
         env_file=str(BASE_DIR / ".env"),
         env_file_encoding="utf-8",

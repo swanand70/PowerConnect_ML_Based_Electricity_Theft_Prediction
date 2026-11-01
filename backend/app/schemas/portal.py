@@ -13,9 +13,78 @@ class BillResponse(BaseModel):
     billing_period_end: date
     units_consumed_kwh: float
     amount_inr: float
+    paid_amount_inr: float = 0.0
+    outstanding_amount_inr: float = 0.0
     due_date: date
     status: str
     paid_at: Optional[datetime] = None
+
+class CreatePaymentOrderRequest(BaseModel):
+    amount_inr: float
+    idempotency_key: Optional[str] = None
+
+class CreatePaymentOrderResponse(BaseModel):
+    order_id: str
+    key_id: str
+    amount_inr: float
+    amount_paise: int
+    currency: str
+    receipt_number: str
+    bill_id: int
+    bill_number: str
+    consumer_name: str
+    consumer_email: Optional[str] = None
+    consumer_phone: Optional[str] = None
+
+class VerifyPaymentRequest(BaseModel):
+    bill_id: int
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
+
+class VerifyPaymentResponse(BaseModel):
+    success: bool
+    message: str
+    receipt_number: str
+    payment_id: int
+    amount_paid_inr: float
+    new_paid_total_inr: float
+    new_outstanding_inr: float
+    bill_status: str
+    is_fully_paid: bool
+
+class PaymentTransactionSummary(BaseModel):
+    id: int
+    receipt_number: str
+    amount_inr: float
+    currency: str
+    status: str
+    razorpay_order_id: Optional[str] = None
+    razorpay_payment_id: Optional[str] = None
+    payment_method: Optional[str] = None
+    created_at: datetime
+    verified_at: Optional[datetime] = None
+
+class PaymentReceiptResponse(BaseModel):
+    id: int
+    receipt_number: str
+    bill_id: int
+    bill_number: str
+    consumer_name: str
+    consumer_no: str
+    tariff_category: str
+    amount_inr: float
+    currency: str
+    status: str
+    razorpay_order_id: Optional[str] = None
+    razorpay_payment_id: Optional[str] = None
+    payment_method: Optional[str] = None
+    created_at: datetime
+    verified_at: Optional[datetime] = None
+    original_bill_amount_inr: float
+    total_paid_inr: float
+    remaining_balance_inr: float
+    bill_status: str
 
 class ConsumerUsageResponse(BaseModel):
     cons_no: str

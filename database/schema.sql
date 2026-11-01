@@ -233,13 +233,54 @@ CREATE TABLE IF NOT EXISTS `bills` (
     `billing_period_end` DATE NOT NULL,
     `units_consumed_kwh` DECIMAL(10, 2) NOT NULL,
     `amount_inr` DECIMAL(10, 2) NOT NULL,
+    `paid_amount_inr` DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
     `due_date` DATE NOT NULL,
-    `status` ENUM('PENDING', 'PAID', 'OVERDUE') NOT NULL DEFAULT 'PENDING',
+    `status` ENUM('PENDING', 'PARTIALLY_PAID', 'PAID', 'OVERDUE') NOT NULL DEFAULT 'PENDING',
     `paid_at` TIMESTAMP NULL,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT `fk_bills_consumer` FOREIGN KEY (`consumer_id`) REFERENCES `consumers` (`id`) ON DELETE CASCADE,
     INDEX `idx_bills_consumer` (`consumer_id`),
     INDEX `idx_bills_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 12a. Payment Transactions
+CREATE TABLE IF NOT EXISTS `payment_transactions` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `bill_id` INT NOT NULL,
+    `consumer_id` INT NOT NULL,
+    `receipt_number` VARCHAR(64) NOT NULL UNIQUE,
+    `amount_inr` DECIMAL(10, 2) NOT NULL,
+    `amount_paise` INT NOT NULL,
+    `currency` VARCHAR(10) NOT NULL DEFAULT 'INR',
+    `status` ENUM('CREATED', 'ATTEMPTED', 'SUCCESS', 'FAILED', 'CANCELLED') NOT NULL DEFAULT 'CREATED',
+    `razorpay_order_id` VARCHAR(100) NULL UNIQUE,
+    `razorpay_payment_id` VARCHAR(100) NULL UNIQUE,
+    `razorpay_signature` VARCHAR(255) NULL,
+    `idempotency_key` VARCHAR(100) NULL UNIQUE,
+    `payment_method` VARCHAR(50) NULL,
+    `error_code` VARCHAR(100) NULL,
+    `error_description` TEXT NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `verified_at` TIMESTAMP NULL,
+    CONSTRAINT `fk_payments_bill` FOREIGN KEY (`bill_id`) REFERENCES `bills` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_payments_consumer` FOREIGN KEY (`consumer_id`) REFERENCES `consumers` (`id`) ON DELETE CASCADE,
+    INDEX `idx_payments_bill` (`bill_id`),
+    INDEX `idx_payments_consumer` (`consumer_id`),
+    INDEX `idx_payments_order` (`razorpay_order_id`),
+    INDEX `idx_payments_payment` (`razorpay_payment_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 12b. Razorpay Webhook Event Idempotency Log
+CREATE TABLE IF NOT EXISTS `razorpay_webhook_events` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `event_id` VARCHAR(100) NOT NULL UNIQUE,
+    `event_type` VARCHAR(100) NOT NULL,
+    `order_id` VARCHAR(100) NULL,
+    `payment_id` VARCHAR(100) NULL,
+    `payload_json` JSON NULL,
+    `processed_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX `idx_webhook_event` (`event_id`),
+    INDEX `idx_webhook_payment` (`payment_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 13. Consumer Issues & Grievances

@@ -289,9 +289,57 @@ export interface BillItem {
   billing_period_end: string;
   units_consumed_kwh: number;
   amount_inr: number;
+  paid_amount_inr?: number;
+  outstanding_amount_inr?: number;
   due_date: string;
-  status: 'PENDING' | 'PAID' | 'OVERDUE';
+  status: 'PENDING' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE';
   paid_at?: string | null;
+}
+
+export interface PaymentTransactionItem {
+  id: number;
+  receipt_number: string;
+  amount_inr: number;
+  currency: string;
+  status: 'CREATED' | 'PENDING' | 'SUCCESS' | 'FAILED' | 'CANCELLED';
+  razorpay_order_id?: string | null;
+  razorpay_payment_id?: string | null;
+  payment_method?: string | null;
+  created_at: string;
+  verified_at?: string | null;
+}
+
+export interface CreatePaymentOrderResponse {
+  order_id: string;
+  key_id: string;
+  amount_inr: number;
+  amount_paise: number;
+  currency: string;
+  receipt_number: string;
+  bill_id: number;
+  bill_number: string;
+  consumer_name: string;
+  consumer_email: string;
+  consumer_phone?: string | null;
+}
+
+export interface VerifyPaymentRequest {
+  bill_id: number;
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
+export interface VerifyPaymentResponse {
+  success: boolean;
+  message: string;
+  receipt_number: string;
+  payment_id: number;
+  amount_paid_inr: number;
+  new_paid_total_inr: number;
+  new_outstanding_inr: number;
+  bill_status: string;
+  is_fully_paid: boolean;
 }
 
 export interface ConsumerIssueItem {

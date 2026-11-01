@@ -34,9 +34,9 @@ const getTourSteps = (caseId: number): TourStep[] => [
     id: 'dashboard-action',
     route: '/employee/dashboard',
     selector: '[data-tour="dashboard-action-card"]',
-    title: 'Top Priority Inspection Candidate',
-    badge: 'HIGHEST VIGILANCE PRIORITY',
-    description: 'The single highest-risk candidate requiring immediate action, ranked by combined ML theft probability and grid volatility.',
+    title: 'Priority Field Dispatch Candidate',
+    badge: 'VIGILANCE DISPATCH PRIORITY',
+    description: 'The highest-priority meter candidate flagged by ML models, ranked for immediate field verification based on theft likelihood and feeder volatility.',
     preferredPlacement: 'bottom'
   },
   {
@@ -54,8 +54,17 @@ const getTourSteps = (caseId: number): TourStep[] => [
     selector: '[data-tour="dashboard-queue-preview"]',
     title: 'Priority Candidate Preview',
     badge: 'DYNAMIC RANKING',
-    description: 'Immediate visual summary of top candidate accounts. Notice how the visual indicators make risk levels immediately distinguishable.',
+    description: 'Immediate summary of top ranked candidate accounts with distinct risk indicators, priority scores, and direct links to case files.',
     preferredPlacement: 'top'
+  },
+  {
+    id: 'map-view',
+    route: '/employee/map',
+    selector: '[data-tour="map-container"]',
+    title: 'Interactive GIS Distribution Map',
+    badge: 'SPATIAL INTELLIGENCE',
+    description: 'Geographic distribution of vigilance candidates color-coded by theft likelihood with CartoDB basemaps. Inspect feeder clusters and plan squad patrol routes.',
+    preferredPlacement: 'bottom'
   },
   {
     id: 'queue-filters',
@@ -74,15 +83,6 @@ const getTourSteps = (caseId: number): TourStep[] => [
     badge: 'CLOSED-LOOP WORKLIST',
     description: 'Consumers ranked dynamically by theft likelihood. From here, assign flying squad officers, schedule inspection dates, or review full case details.',
     preferredPlacement: 'top'
-  },
-  {
-    id: 'map-view',
-    route: '/employee/map',
-    selector: '[data-tour="map-container"]',
-    title: 'Interactive GIS Distribution Map',
-    badge: 'SPATIAL INTELLIGENCE',
-    description: 'Geographic view of vigilance candidates color-coded by risk. Plan efficient squad travel routes and inspect spatial clusters across 11kV distribution feeders.',
-    preferredPlacement: 'bottom'
   },
   {
     id: 'case-shap',
@@ -409,6 +409,14 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
       };
     }
 
+    // Special handling for large container elements that occupy most of the viewport (e.g. MapView container)
+    if (targetRect.height > winH * 0.65) {
+      return {
+        left: Math.round(Math.max(margin, (winW - cardW) / 2)),
+        top: Math.round(Math.max(margin, winH - cardH - margin - 20))
+      };
+    }
+
     const spaceBelow = winH - targetRect.bottom - margin;
     const spaceAbove = targetRect.top - margin;
     const spaceRight = winW - targetRect.right - margin;
@@ -669,45 +677,45 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
           userSelect: isDragging ? 'none' : 'auto'
         }}
         className={`border rounded-xl shadow-2xl flex flex-col transition-shadow duration-150 animate-in fade-in zoom-in-95 ${
-          isDark ? 'bg-[#141619] text-[#F3F4F5]' : 'bg-white text-slate-800'
+          isDark ? 'bg-[#001D3D] text-[#E0FBFC]' : 'bg-white text-slate-800'
         } ${
           isDragging
-            ? 'border-emerald-500 ring-2 ring-emerald-500/30 shadow-3xl'
+            ? 'border-[#003566] ring-2 ring-[#003566]/40 shadow-2xl'
             : isDark
-              ? 'border-[#292C32]'
+              ? 'border-[#003566]'
               : 'border-slate-200'
         }`}
       >
-        {/* Dedicated Drag Handle Bar — Exact match with Consumer Portal */}
+        {/* Dedicated Drag Handle Bar */}
         <div
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           className={`h-7 flex items-center justify-center cursor-grab active:cursor-grabbing border-b select-none transition-colors ${
             isDark
-              ? 'bg-[#0B0C0E] border-[#292C32] text-[#6E737D] hover:text-[#9A9FA8]'
+              ? 'bg-[#000814] border-[#003566] text-[#9DB4C0] hover:text-[#E0FBFC]'
               : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-slate-600'
           }`}
           title="Drag to reposition tour window"
         >
           <GripHorizontal className="w-4 h-4 opacity-75" />
-          <span className="text-[10px] uppercase font-mono tracking-wider ml-1.5 opacity-60">
+          <span className="text-[10px] uppercase font-semibold tracking-wider ml-1.5 opacity-60">
             DRAG TO MOVE
           </span>
         </div>
 
         {/* Tooltip Header Strip */}
         <div className={`border-b px-4 py-2.5 flex items-center justify-between shrink-0 select-none ${
-          isDark ? 'bg-[#181B1F] border-[#292C32]' : 'bg-slate-50/70 border-slate-200'
+          isDark ? 'bg-[#000814] border-[#003566]' : 'bg-slate-50/70 border-slate-200'
         }`}>
           <div className="flex items-center space-x-2 min-w-0">
-            <span className={`text-[11px] tabular-nums font-bold px-2 py-0.5 rounded shrink-0 border ${
-              isDark ? 'bg-emerald-950/50 text-emerald-400 border-emerald-900/60' : 'bg-emerald-50 text-emerald-800 border-emerald-300'
+            <span className={`text-[11px] tabular-nums font-bold px-2 py-0.5 rounded-md shrink-0 border ${
+              isDark ? 'bg-[#003566] text-[#E0FBFC] border-[#003566]' : 'bg-[#E0FBFC] text-[#003566] border-[#C2DFE3]'
             }`}>
               STEP {currentStepIndex + 1} OF {totalSteps}
             </span>
             <span className={`text-[10px] font-semibold uppercase tracking-wider truncate ${
-              isDark ? 'text-[#9A9FA8]' : 'text-slate-500'
+              isDark ? 'text-[#9DB4C0]' : 'text-slate-500'
             }`}>
               {currentStep?.badge}
             </span>
@@ -716,8 +724,8 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
           <button
             type="button"
             onClick={handleCompleteOrSkip}
-            className={`p-1 rounded transition-colors cursor-pointer ${
-              isDark ? 'text-[#7A808C] hover:text-[#F3F4F5] hover:bg-[#1E2227]' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/70'
+            className={`p-1 rounded-md transition-colors cursor-pointer ${
+              isDark ? 'text-[#9DB4C0] hover:text-[#E0FBFC] hover:bg-[#000814]' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/70'
             }`}
             title="Exit Tour (Escape)"
             aria-label="Exit tour"
@@ -730,13 +738,13 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
         <div className="p-4 sm:p-5 flex-1 overflow-y-auto min-h-0">
           <div className="flex items-start justify-between gap-2 mb-2">
             <h4 className={`text-sm sm:text-base font-bold tracking-tight ${
-              isDark ? 'text-[#F3F4F5]' : 'text-slate-900'
+              isDark ? 'text-[#E0FBFC]' : 'text-slate-900'
             }`}>
               {currentStep?.title}
             </h4>
             {location.pathname !== currentStep?.route && (
               <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0 flex items-center gap-1 ${
-                isDark ? 'bg-emerald-950/50 text-emerald-400' : 'bg-emerald-50 text-emerald-700'
+                isDark ? 'bg-[#000814] text-[#FFC300] border border-[#003566]' : 'bg-[#E0FBFC] text-[#003566]'
               }`}>
                 <span>Navigating</span>
                 <ExternalLink className="w-3 h-3" />
@@ -745,7 +753,7 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
           </div>
 
           <p className={`text-xs leading-relaxed min-h-[44px] ${
-            isDark ? 'text-[#9A9FA8]' : 'text-slate-600'
+            isDark ? 'text-[#C2DFE3]' : 'text-slate-600'
           }`}>
             {currentStep?.description}
           </p>
@@ -753,7 +761,7 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
           {/* Fallback note if element could not be spotted */}
           {!targetFound && !isResolving && (
             <div className={`mt-2.5 p-2 rounded text-[11px] ${
-              isDark ? 'bg-[#1E2227] text-[#9A9FA8]' : 'bg-slate-100 text-slate-500'
+              isDark ? 'bg-[#000814] text-[#9DB4C0] border border-[#003566]' : 'bg-slate-100 text-slate-500'
             }`}>
               Target element is loading or out of view on this display resolution.
             </div>
@@ -761,7 +769,7 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
 
           {/* Progress Indicator Bar */}
           <div className={`flex items-center justify-between mt-4 pt-3 border-t ${
-            isDark ? 'border-[#202328]' : 'border-slate-100'
+            isDark ? 'border-[#003566]' : 'border-slate-100'
           }`}>
             <div className="flex space-x-1">
               {tourSteps.map((_, idx) => (
@@ -769,11 +777,11 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
                   key={idx}
                   className={`h-1.5 rounded-full transition-all duration-150 ${
                     idx === currentStepIndex
-                      ? 'w-5 bg-emerald-600 dark:bg-emerald-500'
+                      ? 'w-5 bg-[#003566] dark:bg-[#FFC300]'
                       : idx < currentStepIndex
-                        ? 'w-1.5 bg-emerald-300 dark:bg-emerald-800'
+                        ? 'w-1.5 bg-[#C2DFE3] dark:bg-[#003566]'
                         : isDark
-                          ? 'w-1.5 bg-[#292C32]'
+                          ? 'w-1.5 bg-[#253237]'
                           : 'w-1.5 bg-slate-200'
                   }`}
                 />
@@ -781,7 +789,7 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
             </div>
 
             <span className={`text-[10px] tabular-nums font-medium ${
-              isDark ? 'text-[#7A808C]' : 'text-slate-400'
+              isDark ? 'text-[#9DB4C0]' : 'text-slate-400'
             }`}>
               {Math.round(((currentStepIndex + 1) / totalSteps) * 100)}% Completed
             </span>
@@ -790,13 +798,13 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
 
         {/* Tooltip Action Buttons Footer — Always visible at bottom */}
         <div className={`border-t px-4 py-3 flex items-center justify-between shrink-0 ${
-          isDark ? 'bg-[#181B1F] border-[#292C32]' : 'bg-slate-50 border-slate-200'
+          isDark ? 'bg-[#000814] border-[#003566]' : 'bg-slate-50 border-slate-200'
         }`}>
           <button
             onClick={handlePrevStep}
             onPointerDown={e => e.stopPropagation()}
             className={`text-xs font-semibold flex items-center space-x-1 px-2.5 py-1.5 rounded transition-colors ${
-              isDark ? 'text-[#9A9FA8] hover:text-[#F3F4F5] hover:bg-[#1E2227]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+              isDark ? 'text-[#9DB4C0] hover:text-[#E0FBFC] hover:bg-[#001D3D]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
             }`}
           >
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -808,7 +816,7 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
               onClick={handleCompleteOrSkip}
               onPointerDown={e => e.stopPropagation()}
               className={`text-xs font-semibold px-3 py-1.5 rounded transition-colors ${
-                isDark ? 'text-[#7A808C] hover:text-[#F3F4F5] hover:bg-[#1E2227]' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200'
+                isDark ? 'text-[#9DB4C0] hover:text-[#E0FBFC] hover:bg-[#001D3D]' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200'
               }`}
             >
               Skip
@@ -816,7 +824,7 @@ export const GuidedTourModal: React.FC<GuidedTourModalProps> = ({ isOpen, onClos
             <button
               onClick={handleNextStep}
               onPointerDown={e => e.stopPropagation()}
-              className="bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center space-x-1.5 transition-colors shadow-xs"
+              className="bg-[#003566] hover:bg-[#001D3D] dark:bg-[#003566] dark:hover:bg-[#002855] text-white text-xs font-semibold px-4 py-2 rounded-md flex items-center space-x-1.5 transition-colors shadow-xs"
             >
               <span>{currentStepIndex === totalSteps - 1 ? 'Finish Tour' : 'Next Step'}</span>
               {currentStepIndex === totalSteps - 1 ? (

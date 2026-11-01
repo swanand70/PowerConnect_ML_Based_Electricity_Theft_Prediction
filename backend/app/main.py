@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from backend.app.core.config import settings
 from backend.app.api import (
     auth, users, inspections, consumers, billing,
-    issues, posts, notifications, predictions, feedback, models
+    issues, posts, notifications, predictions, feedback, models, webhooks
 )
 
 app = FastAPI(
@@ -111,6 +111,8 @@ app.include_router(users.router, prefix="/api/users", tags=["Users & Onboarding"
 app.include_router(inspections.router, prefix="/api/inspections", tags=["Inspections & Flying Squad"])
 app.include_router(consumers.router, prefix="/api/consumers", tags=["Consumers & Usage"])
 app.include_router(billing.router, prefix="/api/billing", tags=["Billing & Invoicing"])
+app.include_router(billing.consumer_router, prefix="/api/consumer", tags=["Consumer Billing & Payments"])
+app.include_router(webhooks.router, prefix="/api/webhooks", tags=["Webhooks"])
 app.include_router(issues.router, prefix="/api/issues", tags=["Consumer Issues"])
 app.include_router(posts.router, prefix="/api/posts", tags=["Board Communication"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])

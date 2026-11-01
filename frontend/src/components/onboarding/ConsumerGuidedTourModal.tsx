@@ -71,7 +71,7 @@ const consumerTourSteps: TourStep[] = [
     selector: '[data-tour="consumer-billing-section"]',
     title: 'Billing Statements & Settlement',
     badge: 'INVOICES & PAYMENTS',
-    description: 'Review historical electricity bills, due dates, and payment statuses. You can verify bill authenticity and simulate secure instant online bill settlement with an audit record.',
+    description: 'Review active electricity statements, outstanding balances, and due dates. Make flexible full or partial bill payments securely via Razorpay, and access past official receipts in the expandable remittance ledger.',
     preferredPlacement: 'top',
     icon: CreditCard
   },

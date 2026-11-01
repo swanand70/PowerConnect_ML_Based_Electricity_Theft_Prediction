@@ -1,74 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import type {
-  ThreeTierMonitoringResponse,
-  FeatureDriftResponse,
-  ModelRegistryItem,
-  FeedbackReviewRecord,
-  CandidateTrainingResponse
-} from '../types';
+import type { ThreeTierMonitoringResponse } from '../types';
 import { CardSkeleton } from '../components/common/LoadingSkeleton';
 import {
   ShieldCheck,
-  Cpu,
-  BarChart2,
-  Activity,
   AlertTriangle,
   CheckCircle2,
-  XCircle,
-  RotateCcw,
   Sparkles,
-  Database,
   Lock,
   Info,
   RefreshCw,
-  GitBranch,
-  Sliders,
-  Check
+  AlertCircle
 } from 'lucide-react';
 
-type TabKey = 'overview' | 'monitoring' | 'drift' | 'feedback' | 'lifecycle';
-
 export const ModelGovernance: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [monitoringData, setMonitoringData] = useState<ThreeTierMonitoringResponse | null>(null);
-  const [driftData, setDriftData] = useState<FeatureDriftResponse | null>(null);
-  const [registry, setRegistry] = useState<ModelRegistryItem[]>([]);
-  const [feedbackData, setFeedbackData] = useState<{
-    total: number;
-    eligible_count: number;
-    ineligible_count: number;
-    items: FeedbackReviewRecord[];
-  } | null>(null);
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
-
-  // Candidate training state
-  const [trainingLoading, setTrainingLoading] = useState(false);
-  const [allowBenchmarkDemo, setAllowBenchmarkDemo] = useState(false);
-  const [trainingResult, setTrainingResult] = useState<CandidateTrainingResponse | null>(null);
-
-  // Promotion / Rollback modal states
-  const [promoteModalVersion, setPromoteModalVersion] = useState<string | null>(null);
-  const [rollbackModalOpen, setRollbackModalOpen] = useState(false);
-  const [submittingAction, setSubmittingAction] = useState(false);
 
   const loadAllData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const [monRes, driftRes, regRes, fbRes] = await Promise.all([
-        api.getModelMonitoring(),
-        api.getDataAndFeatureDrift(),
-        api.getModelRegistry(),
-        api.getFeedbackReview(1, 50)
-      ]);
+      const monRes = await api.getModelMonitoring();
       setMonitoringData(monRes);
-      setDriftData(driftRes);
-      setRegistry(regRes);
-      setFeedbackData(fbRes);
     } catch (err: any) {
       setError(err.message || 'Failed to load model governance data.');
     } finally {
@@ -80,78 +35,9 @@ export const ModelGovernance: React.FC = () => {
     loadAllData();
   }, []);
 
-  const handleToggleEligibility = async (feedbackId: number, currentEligibility: boolean) => {
-    try {
-      setActionMessage(null);
-      const res = await api.toggleFeedbackEligibility(feedbackId, !currentEligibility);
-      setActionMessage({ type: 'success', text: res.message });
-      // Update local state
-      if (feedbackData) {
-        setFeedbackData({
-          ...feedbackData,
-          items: feedbackData.items.map((item) =>
-            item.id === feedbackId ? { ...item, is_eligible_for_retraining: res.is_eligible_for_retraining } : item
-          )
-        });
-      }
-    } catch (err: any) {
-      setActionMessage({ type: 'error', text: err.message || 'Failed to update eligibility.' });
-    }
-  };
-
-  const handleRunCandidateTraining = async () => {
-    try {
-      setTrainingLoading(true);
-      setActionMessage(null);
-      setTrainingResult(null);
-      const res = await api.trainCandidateModel({ allow_benchmark_demonstration: allowBenchmarkDemo });
-      setTrainingResult(res);
-      if (res.success) {
-        setActionMessage({ type: 'success', text: res.message });
-        // Refresh registry
-        const regRes = await api.getModelRegistry();
-        setRegistry(regRes);
-      } else {
-        setActionMessage({ type: 'info', text: res.message });
-      }
-    } catch (err: any) {
-      setActionMessage({ type: 'error', text: err.message || 'Candidate evaluation failed.' });
-    } finally {
-      setTrainingLoading(false);
-    }
-  };
-
-  const handlePromoteCandidate = async (version: string) => {
-    try {
-      setSubmittingAction(true);
-      const res = await api.promoteCandidateModel(version);
-      setActionMessage({ type: 'success', text: res.message });
-      setPromoteModalVersion(null);
-      await loadAllData();
-    } catch (err: any) {
-      setActionMessage({ type: 'error', text: err.message || 'Failed to promote candidate.' });
-    } finally {
-      setSubmittingAction(false);
-    }
-  };
-
-  const handleRollback = async () => {
-    try {
-      setSubmittingAction(true);
-      const res = await api.rollbackToChampion();
-      setActionMessage({ type: 'success', text: res.message });
-      setRollbackModalOpen(false);
-      await loadAllData();
-    } catch (err: any) {
-      setActionMessage({ type: 'error', text: err.message || 'Failed to rollback model.' });
-    } finally {
-      setSubmittingAction(false);
-    }
-  };
-
   if (loading) {
     return (
-      <div className="space-y-6 max-w-7xl mx-auto p-4 sm:p-6">
+      <div className="space-y-6 max-w-6xl mx-auto p-4 sm:p-6">
         <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded w-1/3 animate-pulse"></div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <CardSkeleton />
@@ -166,13 +52,13 @@ export const ModelGovernance: React.FC = () => {
 
   if (error || !monitoringData) {
     return (
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-6xl mx-auto p-6">
         <div className="p-6 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 rounded-lg">
-          <h2 className="font-semibold text-base mb-1">Model Governance Data Unavailable</h2>
+          <h2 className="font-semibold text-base mb-1">Model Documentation Data Unavailable</h2>
           <p className="text-sm">{error || 'Unable to connect to model monitoring service.'}</p>
           <button
             onClick={loadAllData}
-            className="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-semibold"
+            className="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-semibold cursor-pointer"
           >
             Retry Connection
           </button>
@@ -181,1107 +67,668 @@ export const ModelGovernance: React.FC = () => {
     );
   }
 
-  const { historical_baseline_tier1: tier1, operational_outcomes_tier2: tier2, label_backed_performance_tier3: tier3 } = monitoringData;
+  const { historical_baseline_tier1: tier1 } = monitoringData;
   const activeVersion = monitoringData.active_model_version;
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto p-4 sm:p-6 text-slate-900 dark:text-slate-100">
-      {/* Top Banner / Breadcrumb & Status */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
-        <div>
-          <div className="flex items-center space-x-2">
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold tracking-wider uppercase bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-              Phase 6 Governance Active
-            </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">Closed-Loop MLOps</span>
+    <div className="space-y-10 max-w-6xl mx-auto p-4 sm:p-6 text-slate-900 dark:text-slate-100 font-sans pb-12">
+      {/* ========================================================================= */}
+      {/* HERO HEADER: Plain-English Mission Statement & Champion Status */}
+      {/* ========================================================================= */}
+      <header className="border-b border-slate-200 dark:border-slate-800/80 pb-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold tracking-wider uppercase bg-[#E0FBFC] text-[#003566] dark:bg-[#003566]/60 dark:text-[#E0FBFC] border border-[#C2DFE3] dark:border-[#003566]">
+                ML Documentation & Governance
+              </span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">Decision Support System</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5 flex items-center space-x-2.5">
+              <span>How PowerConnect AI Detects Electricity Theft</span>
+            </h1>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mt-2 max-w-3xl leading-relaxed">
+              A transparent, visual guide explaining the actual electricity-consumption data analysed, how our class-weighted model scores suspicious patterns, how field inspection feedback provides ground truth, and how human-governed retraining protects model reliability over time.
+            </p>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-1 flex items-center space-x-2.5">
-            <ShieldCheck className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-            <span>Model Intelligence & Governance Workspace</span>
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-3xl">
-            Audit-grade monitoring of champion model performance, field outcome feedback provenance, statistical telemetry drift, and controlled candidate evaluation lifecycle.
+
+          {/* Active Model Snapshot Card */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="bg-slate-50 dark:bg-[#001D3D] border border-slate-200 dark:border-[#003566] rounded-lg px-4 py-3 text-right shadow-2xs">
+              <div className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400">
+                Active Production Champion
+              </div>
+              <div className="text-base font-bold text-[#003566] dark:text-[#E0FBFC] flex items-center justify-end space-x-2 mt-0.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>{activeVersion}</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">(XGBoost, τ = {tier1.operating_threshold})</span>
+              </div>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                Retraining: <span className="font-semibold text-amber-600 dark:text-amber-400">Manual & Governed</span>
+              </div>
+            </div>
+
+            <button
+              onClick={loadAllData}
+              title="Refresh Live Data"
+              className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors shadow-2xs cursor-pointer"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* ========================================================================= */}
+      {/* SECTION 1: What Data Was Analysed? */}
+      {/* ========================================================================= */}
+      <section className="space-y-5">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 rounded-lg bg-[#E0FBFC] dark:bg-[#003566] text-[#003566] dark:text-[#E0FBFC] flex items-center justify-center font-bold text-sm">
+            1
+          </div>
+          <div>
+            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+              What Data Was Analysed?
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              The real-world SGCC dataset, temporal span, class imbalance, and engineered behavioral features.
+            </p>
+          </div>
+        </div>
+
+        <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+          Our detection engine was developed on the verified State Grid Corporation of China (SGCC) historical smart-meter dataset. Rather than artificial or synthetic test cases, the model was trained on <strong>1,035 consecutive calendar days</strong> of actual daily kilowatt-hour readings collected from <strong>42,372 customer meters</strong> between January 1, 2014 and October 31, 2016.
+        </p>
+
+        {/* 4 Stat Overview Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+          <div className="p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
+            <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Monitoring Span</div>
+            <div className="text-xl font-bold text-slate-900 dark:text-white mt-1">1,035 Days</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">2014-01-01 to 2016-10-31</div>
+          </div>
+          <div className="p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
+            <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Consumers Analysed</div>
+            <div className="text-xl font-bold text-slate-900 dark:text-white mt-1">42,372 Accounts</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">43.8 million daily readings</div>
+          </div>
+          <div className="p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
+            <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Theft Prevalence</div>
+            <div className="text-xl font-bold text-amber-600 dark:text-[#FFC300] mt-1">8.53% (3,615)</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">1 theft : 10.7 normal accounts</div>
+          </div>
+          <div className="p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
+            <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Raw Data Completeness</div>
+            <div className="text-xl font-bold text-slate-900 dark:text-white mt-1">74.36% Valid</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">25.64% missing imputed</div>
+          </div>
+        </div>
+
+        {/* Visual Element: Class Imbalance Representation */}
+        <div className="p-5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3.5 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              Severe Class Imbalance Reality (10.7 to 1 Ratio)
+            </h3>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">Total: 42,372 Consumers</span>
+          </div>
+
+          {/* Stacked Proportional Bar */}
+          <div className="h-6 w-full rounded-md overflow-hidden flex bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <div
+              style={{ width: '91.47%' }}
+              className="bg-[#003566] dark:bg-[#001D3D] text-[#E0FBFC] flex items-center justify-start px-3 text-[11px] font-semibold"
+              title="38,757 Normal Consumers (91.47%)"
+            >
+              Normal Consumers (38,757 · 91.5%)
+            </div>
+            <div
+              style={{ width: '8.53%' }}
+              className="bg-[#FFC300] text-[#000814] flex items-center justify-center text-[10px] font-bold"
+              title="3,615 Theft Suspects (8.53%)"
+            >
+              Theft (8.5%)
+            </div>
+          </div>
+
+          {/* Plain-English Caption */}
+          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed bg-slate-50 dark:bg-slate-800/50 p-3 rounded border border-slate-200 dark:border-slate-700/60">
+            <strong className="text-slate-900 dark:text-white">Why standard metrics fail here:</strong> Because 91.5% of accounts are completely innocent, a naive model that guesses “no theft” for everyone would falsely appear to be 91.5% accurate while catching zero thieves. To solve this, our XGBoost model is trained with a <strong>10.72x positive penalty weight</strong> (<code className="font-mono text-[11px] bg-slate-200 dark:bg-slate-700 px-1 py-0.5 rounded">scale_pos_weight = 10.72</code>) to ensure rare theft signals are never drowned out by the normal majority.
           </p>
         </div>
 
+        {/* Feature Engineering Table / Cards */}
+        <div className="p-5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3.5 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              The 26 Features Actually Used by the Model
+            </h3>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">Extracted from daily time series</span>
+          </div>
+
+          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+            The model does not make decisions on single-day spikes. Instead, it processes 26 statistical, behavioral, temporal, and data-integrity features designed to capture physical theft behaviors like meter shunting, phase bypassing, and intermittent neutral disconnection.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+            <div className="p-3.5 rounded bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs text-slate-900 dark:text-white">Quarterly Variance Ratio</span>
+                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/80 px-1.5 py-0.5 rounded">
+                  Top SHAP (0.455)
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300">
+                Measures whether seasonal changes match expected weather shifts. A sudden quarterly variance collapse without weather justification is the strongest indicator of illegal meter tampering.
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs text-slate-900 dark:text-white">Missing Reading Ratio & Quality Score</span>
+                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/80 px-1.5 py-0.5 rounded">
+                  SHAP (0.243 / 0.201)
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300">
+                Measures smart-meter transmission gaps. Physical tampering or radio-jamming frequently produces corrupted or missing bursts, quantified directly so gaps are not misconstrued as zero usage.
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs text-slate-900 dark:text-white">Daily & Weekly Autocorrelation (Lag 1 & 7)</span>
+                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/80 px-1.5 py-0.5 rounded">
+                  SHAP (0.223 / 0.170)
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300">
+                Legitimate households follow natural rhythms (cooking, evening lighting, weekend appliances). Bypassed or clamped meters show flatlined or irregular traces that destroy this normal correlation.
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs text-slate-900 dark:text-white">Recent vs. Historical 90-Day Ratio</span>
+                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/80 px-1.5 py-0.5 rounded">
+                  SHAP (0.110)
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300">
+                Compares the last 90 days against previous years. A 40%+ drop relative to an account's historical baseline flags potential initiation of a meter bypass.
+              </p>
+            </div>
+          </div>
+
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 italic pt-1">
+            * Additional features include trend slope, daily volatility difference, maximum single-day drop, zero-consumption ratio, coefficient of variation, and interquartile range (IQR).
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* SECTION 2: How Does Prediction Work? */}
+      {/* ========================================================================= */}
+      <section className="space-y-5">
         <div className="flex items-center space-x-3">
-          <div className="bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg px-3.5 py-2 text-right">
-            <div className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400">
-              Active Production Champion
-            </div>
-            <div className="text-sm font-bold text-emerald-700 dark:text-emerald-400 flex items-center justify-end space-x-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>{activeVersion}</span>
-              <span className="text-xs text-slate-500 dark:text-slate-400 font-mono font-normal">(τ = {tier1.operating_threshold})</span>
-            </div>
+          <div className="w-8 h-8 rounded-lg bg-[#E0FBFC] dark:bg-[#003566] text-[#003566] dark:text-[#E0FBFC] flex items-center justify-center font-bold text-sm">
+            2
           </div>
-
-          <button
-            onClick={loadAllData}
-            title="Refresh All Governance Telemetry"
-            className="p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors shadow-2xs"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Action Notification Alert */}
-      {actionMessage && (
-        <div
-          className={`p-3.5 rounded-lg text-xs font-medium flex items-center justify-between border ${
-            actionMessage.type === 'success'
-              ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200'
-              : actionMessage.type === 'error'
-              ? 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200'
-              : 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200'
-          }`}
-        >
-          <div className="flex items-center space-x-2">
-            {actionMessage.type === 'success' ? (
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
-            ) : actionMessage.type === 'error' ? (
-              <XCircle className="w-4 h-4 shrink-0" />
-            ) : (
-              <Info className="w-4 h-4 shrink-0" />
-            )}
-            <span>{actionMessage.text}</span>
-          </div>
-          <button
-            onClick={() => setActionMessage(null)}
-            className="text-xs underline hover:no-underline font-semibold ml-4"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
-
-      {/* Navigation Tabs */}
-      <div className="border-b border-slate-200 dark:border-slate-800 flex space-x-1 overflow-x-auto scrollbar-none">
-        <button
-          id="tab-overview"
-          onClick={() => setActiveTab('overview')}
-          className={`px-4 py-2.5 text-xs font-semibold rounded-t-lg transition-colors whitespace-nowrap border-b-2 flex items-center space-x-2 ${
-            activeTab === 'overview'
-              ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400 bg-white dark:bg-slate-900 border-t border-l border-r border-slate-200 dark:border-slate-800'
-              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-          }`}
-        >
-          <Cpu className="w-4 h-4" />
-          <span>Model Benchmark & Overview</span>
-        </button>
-
-        <button
-          id="tab-monitoring"
-          onClick={() => setActiveTab('monitoring')}
-          className={`px-4 py-2.5 text-xs font-semibold rounded-t-lg transition-colors whitespace-nowrap border-b-2 flex items-center space-x-2 ${
-            activeTab === 'monitoring'
-              ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400 bg-white dark:bg-slate-900 border-t border-l border-r border-slate-200 dark:border-slate-800'
-              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-          }`}
-        >
-          <BarChart2 className="w-4 h-4" />
-          <span>Three-Tier Performance Monitoring</span>
-        </button>
-
-        <button
-          id="tab-drift"
-          onClick={() => setActiveTab('drift')}
-          className={`px-4 py-2.5 text-xs font-semibold rounded-t-lg transition-colors whitespace-nowrap border-b-2 flex items-center space-x-2 ${
-            activeTab === 'drift'
-              ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400 bg-white dark:bg-slate-900 border-t border-l border-r border-slate-200 dark:border-slate-800'
-              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-          }`}
-        >
-          <Activity className="w-4 h-4" />
-          <span>Data Quality & Feature Drift</span>
-          {driftData?.overall_drift_alert_level !== 'NOMINAL' && (
-            <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-          )}
-        </button>
-
-        <button
-          id="tab-feedback"
-          onClick={() => setActiveTab('feedback')}
-          className={`px-4 py-2.5 text-xs font-semibold rounded-t-lg transition-colors whitespace-nowrap border-b-2 flex items-center space-x-2 ${
-            activeTab === 'feedback'
-              ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400 bg-white dark:bg-slate-900 border-t border-l border-r border-slate-200 dark:border-slate-800'
-              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-          }`}
-        >
-          <Database className="w-4 h-4" />
-          <span>Verified Field Feedback Review</span>
-          <span className="ml-1 px-1.5 py-0.2 rounded-full bg-slate-200 dark:bg-slate-800 text-[10px]">
-            {feedbackData?.total || 0}
-          </span>
-        </button>
-
-        <button
-          id="tab-lifecycle"
-          onClick={() => setActiveTab('lifecycle')}
-          className={`px-4 py-2.5 text-xs font-semibold rounded-t-lg transition-colors whitespace-nowrap border-b-2 flex items-center space-x-2 ${
-            activeTab === 'lifecycle'
-              ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400 bg-white dark:bg-slate-900 border-t border-l border-r border-slate-200 dark:border-slate-800'
-              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-          }`}
-        >
-          <GitBranch className="w-4 h-4" />
-          <span>Candidate Training & Registry</span>
-        </button>
-      </div>
-
-      {/* =========================================================================
-          TAB 1: MODEL BENCHMARK & OVERVIEW
-         ========================================================================= */}
-      {activeTab === 'overview' && (
-        <div className="space-y-6">
-          {/* Champion Metadata Card */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5 shadow-2xs">
-            <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 gap-4">
-              <div>
-                <div className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                  Production Champion Baseline
-                </div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white mt-0.5">
-                  {tier1.algorithm} ({tier1.model_version})
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Benchmark Dataset: <span className="font-mono text-slate-700 dark:text-slate-300">{tier1.benchmark_dataset}</span> | Evaluation Type: {tier1.evaluation_type}
-                </p>
-              </div>
-              <div className="flex items-center space-x-3">
-                <span className="px-3 py-1 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono font-medium">
-                  Operating Threshold: <strong>{tier1.operating_threshold.toFixed(2)}</strong>
-                </span>
-                <span className="px-3 py-1 rounded bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold">
-                  ACTIVE
-                </span>
-              </div>
-            </div>
-
-            {/* Offline Benchmark KPI Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 pt-4">
-              <div className="p-3 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60">
-                <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Held-Out PR-AUC
-                </div>
-                <div className="text-xl font-bold font-mono text-emerald-700 dark:text-emerald-400 mt-1">
-                  {tier1.metrics.pr_auc.toFixed(4)}
-                </div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Primary ranking metric</div>
-              </div>
-
-              <div className="p-3 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60">
-                <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Held-Out ROC-AUC
-                </div>
-                <div className="text-xl font-bold font-mono text-slate-900 dark:text-white mt-1">
-                  {tier1.metrics.roc_auc.toFixed(4)}
-                </div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Overall discrimination</div>
-              </div>
-
-              <div className="p-3 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60">
-                <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Held-Out F1-Score
-                </div>
-                <div className="text-xl font-bold font-mono text-slate-900 dark:text-white mt-1">
-                  {tier1.metrics.f1_score.toFixed(4)}
-                </div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">At threshold 0.65</div>
-              </div>
-
-              <div className="p-3 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60">
-                <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Offline Precision
-                </div>
-                <div className="text-xl font-bold font-mono text-slate-900 dark:text-white mt-1">
-                  {(tier1.metrics.precision * 100).toFixed(1)}%
-                </div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">150 TP / 386 Flagged</div>
-              </div>
-
-              <div className="p-3 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60">
-                <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Offline Recall
-                </div>
-                <div className="text-xl font-bold font-mono text-slate-900 dark:text-white mt-1">
-                  {(tier1.metrics.recall * 100).toFixed(1)}%
-                </div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">150 TP / 415 Positives</div>
-              </div>
-            </div>
-
-            {/* Benchmark Disclaimer Alert */}
-            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/60 rounded-md text-xs text-blue-800 dark:text-blue-300 flex items-start space-x-2">
-              <Info className="w-4 h-4 shrink-0 mt-0.5" />
-              <div>
-                <strong>Immutable Evaluation Baseline:</strong> {tier1.evaluation_notes}. Held-out test partitions are preserved strictly to prevent test-set leakage. Live model evaluations in production must never overwrite or contaminate this historical anchor.
-              </div>
-            </div>
-          </div>
-
-          {/* Matrix & Precision@K side-by-side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Confusion Matrix */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5 shadow-2xs">
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center space-x-2 mb-3">
-                <Sliders className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <span>Held-Out Confusion Matrix (τ = 0.65)</span>
-              </h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                Total test population: 3,601 consumer time-series records evaluated under class imbalance.
-              </p>
-
-              <div className="grid grid-cols-2 gap-3 max-w-md mx-auto text-center font-mono">
-                <div className="p-4 rounded bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800">
-                  <div className="text-xs text-emerald-700 dark:text-emerald-400 font-sans font-semibold">True Negatives (TN)</div>
-                  <div className="text-2xl font-bold text-emerald-900 dark:text-emerald-200 mt-1">
-                    {tier1.confusion_matrix.true_negatives.toLocaleString()}
-                  </div>
-                  <div className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-0.5">Correctly Classified Clean</div>
-                </div>
-
-                <div className="p-4 rounded bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800">
-                  <div className="text-xs text-amber-700 dark:text-amber-400 font-sans font-semibold">False Positives (FP)</div>
-                  <div className="text-2xl font-bold text-amber-900 dark:text-amber-200 mt-1">
-                    {tier1.confusion_matrix.false_positives.toLocaleString()}
-                  </div>
-                  <div className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">Clean Flagged for Audit</div>
-                </div>
-
-                <div className="p-4 rounded bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800">
-                  <div className="text-xs text-red-700 dark:text-red-400 font-sans font-semibold">False Negatives (FN)</div>
-                  <div className="text-2xl font-bold text-red-900 dark:text-red-200 mt-1">
-                    {tier1.confusion_matrix.false_negatives.toLocaleString()}
-                  </div>
-                  <div className="text-[10px] text-red-600 dark:text-red-400 mt-0.5">Theft Cases Missed</div>
-                </div>
-
-                <div className="p-4 rounded bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800">
-                  <div className="text-xs text-emerald-700 dark:text-emerald-400 font-sans font-semibold">True Positives (TP)</div>
-                  <div className="text-2xl font-bold text-emerald-900 dark:text-emerald-200 mt-1">
-                    {tier1.confusion_matrix.true_positives.toLocaleString()}
-                  </div>
-                  <div className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-0.5">Theft Cases Detected</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Precision@K Inspection Capacity */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5 shadow-2xs">
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center space-x-2 mb-3">
-                <BarChart2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <span>Operational Capacity Tuning (Precision@K)</span>
-              </h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                Measures audit efficiency when field inspection squad capacity is restricted to top-K highest predicted risk meters.
-              </p>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
-                    <tr>
-                      <th className="py-2.5 px-3">Squad Capacity (K)</th>
-                      <th className="py-2.5 px-3">Precision@K</th>
-                      <th className="py-2.5 px-3">Recall@K</th>
-                      <th className="py-2.5 px-3">Yield Profile</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-mono">
-                    {Object.entries(tier1.precision_recall_at_k).map(([key, item]) => (
-                      <tr key={key} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                        <td className="py-2.5 px-3 font-semibold text-slate-800 dark:text-slate-200 uppercase font-sans">
-                          {key.replace('_', ' ')}
-                        </td>
-                        <td className="py-2.5 px-3 text-emerald-700 dark:text-emerald-400 font-bold">
-                          {(item.precision_at_k * 100).toFixed(1)}%
-                        </td>
-                        <td className="py-2.5 px-3 text-slate-700 dark:text-slate-300">
-                          {(item.recall_at_k * 100).toFixed(1)}%
-                        </td>
-                        <td className="py-2.5 px-3 font-sans text-[11px] text-slate-500">
-                          {item.confirmed_theft_cases || item.confirmed_thefts} confirmed detections
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+          <div>
+            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+              How Does Prediction Work?
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              From consumption curves to inspection queues: scoring, thresholding, and the critical distinction between suspicion and proof.
+            </p>
           </div>
         </div>
-      )}
 
-      {/* =========================================================================
-          TAB 2: THREE-TIER PERFORMANCE MONITORING
-         ========================================================================= */}
-      {activeTab === 'monitoring' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* TIER 1 CARD */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5 shadow-2xs flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    Tier 1: Offline Baseline
-                  </span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                    Static Holdout
-                  </span>
-                </div>
+        <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+          Daily meter telemetry is transformed into engineered behavioral features and passed into our trained <strong>XGBoost classifier</strong> (<code className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">150 decision trees, max_depth = 6, learning_rate = 0.08</code>). Rather than issuing a rigid true/false verdict, the model outputs a <strong>continuous suspicion probability between 0.0 and 1.0</strong>.
+        </p>
 
-                <div className="mt-4 space-y-3">
-                  <div>
-                    <div className="text-2xl font-bold font-mono text-slate-900 dark:text-white">
-                      {tier1.metrics.pr_auc.toFixed(4)}
-                    </div>
-                    <div className="text-xs text-slate-500">Held-Out Test PR-AUC</div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
-                    <div>
-                      <span className="text-slate-400">ROC-AUC:</span>{' '}
-                      <strong className="font-mono">{tier1.metrics.roc_auc.toFixed(4)}</strong>
-                    </div>
-                    <div>
-                      <span className="text-slate-400">F1-Score:</span>{' '}
-                      <strong className="font-mono">{tier1.metrics.f1_score.toFixed(4)}</strong>
-                    </div>
-                    <div>
-                      <span className="text-slate-400">Precision:</span>{' '}
-                      <strong className="font-mono">{(tier1.metrics.precision * 100).toFixed(1)}%</strong>
-                    </div>
-                    <div>
-                      <span className="text-slate-400">Recall:</span>{' '}
-                      <strong className="font-mono">{(tier1.metrics.recall * 100).toFixed(1)}%</strong>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-5 p-2.5 rounded bg-slate-50 dark:bg-slate-800/40 text-[11px] text-slate-500 border border-slate-200 dark:border-slate-700/50">
-                Immutable test partition benchmark (SGCC-2016-Clean-v1). Not affected by live operational data.
-              </div>
+        {/* 3 Step Card Process */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          <div className="p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2 shadow-2xs">
+            <div className="text-xs font-bold text-[#003566] dark:text-[#E0FBFC] uppercase tracking-wider">
+              Step 1: Probability Scoring
             </div>
-
-            {/* TIER 2 CARD */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5 shadow-2xs flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                    Tier 2: Operational Outcomes
-                  </span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
-                    Field Squads
-                  </span>
-                </div>
-
-                <div className="mt-4 space-y-3">
-                  <div>
-                    <div className="text-2xl font-bold font-mono text-emerald-700 dark:text-emerald-400">
-                      {tier2.inspection_confirmation_rate_pct.toFixed(1)}%
-                    </div>
-                    <div className="text-xs text-slate-500 font-medium">
-                      Conclusive Confirmation Rate ({tier2.theft_confirmed_count} / {tier2.conclusive_verified_audits_count} conclusive audits)
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Completed Inspections:</span>
-                      <strong className="font-mono">{tier2.completed_inspections_count}</strong>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Theft Confirmed:</span>
-                      <strong className="font-mono text-emerald-600 dark:text-emerald-400">{tier2.theft_confirmed_count}</strong>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">No Theft Found:</span>
-                      <strong className="font-mono text-slate-700 dark:text-slate-300">{tier2.no_theft_found_count}</strong>
-                    </div>
-                    <div className="flex justify-between text-amber-700 dark:text-amber-400">
-                      <span>Inconclusive Audits:</span>
-                      <strong className="font-mono">{tier2.inconclusive_count}</strong>
-                    </div>
-                    <div className="flex justify-between text-slate-400">
-                      <span>Pending Verification:</span>
-                      <strong className="font-mono">{tier2.unverified_pending_cases}</strong>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-5 p-2.5 rounded bg-emerald-50 dark:bg-emerald-950/30 text-[11px] text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                <strong>Denominator Isolation:</strong> Confirmation rate uses only conclusive audits ({tier2.theft_confirmed_count} + {tier2.no_theft_found_count}). Inconclusive cases are reported separately and excluded from the denominator.
-              </div>
-            </div>
-
-            {/* TIER 3 CARD */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5 shadow-2xs flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                  <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-                    Tier 3: Label-Backed Performance
-                  </span>
-                  <span
-                    className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                      tier3.status === 'EVALUATED_ON_VERIFIED_FEEDBACK'
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300'
-                    }`}
-                  >
-                    {tier3.status === 'EVALUATED_ON_VERIFIED_FEEDBACK' ? 'Verified Evaluation' : 'Sample Gated'}
-                  </span>
-                </div>
-
-                <div className="mt-4 space-y-3">
-                  {tier3.status === 'INSUFFICIENT_SAMPLE_SIZE' ? (
-                    <div>
-                      <div className="flex items-center space-x-2 text-amber-700 dark:text-amber-400">
-                        <AlertTriangle className="w-5 h-5 shrink-0" />
-                        <span className="font-bold text-sm">Insufficient Verified Outcomes</span>
-                      </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                        Supervised evaluation requires a minimum of <strong>{tier3.minimum_required_samples}</strong> verified field outcomes to compute statistically sound precision/recall metrics.
-                      </p>
-                      <div className="mt-3 bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
-                        <div
-                          className="bg-amber-500 h-full transition-all"
-                          style={{ width: `${Math.min(100, (tier3.verified_sample_size / tier3.minimum_required_samples) * 100)}%` }}
-                        ></div>
-                      </div>
-                      <div className="text-[11px] text-right font-mono text-slate-500 mt-1">
-                        Current: {tier3.verified_sample_size} / {tier3.minimum_required_samples} required labels
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <div className="text-2xl font-bold font-mono text-blue-700 dark:text-blue-400">
-                        {tier3.metrics ? `${(tier3.metrics.f1_score * 100).toFixed(1)}%` : 'N/A'}
-                      </div>
-                      <div className="text-xs text-slate-500">Live Supervised F1-Score (n = {tier3.verified_sample_size})</div>
-                      {tier3.metrics && (
-                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
-                          <div>Precision: <strong className="font-mono">{(tier3.metrics.precision * 100).toFixed(1)}%</strong></div>
-                          <div>Recall: <strong className="font-mono">{(tier3.metrics.recall * 100).toFixed(1)}%</strong></div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-5 p-2.5 rounded bg-amber-50 dark:bg-amber-950/30 text-[11px] text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                <strong>Selection Bias Notice:</strong> {tier3.sampling_limitation_notice}
-              </div>
-            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              The model evaluates all 26 behavioral features simultaneously to calculate the likelihood of theft. The output is a percentage reflecting pattern similarity to known theft cases.
+            </p>
           </div>
 
-          {/* Operational vs ML Distinction Banner */}
-          <div className="p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5 mb-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>Critical Distinction: Operational Hit Rates vs Statistical ML Metrics</span>
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600 dark:text-slate-400">
-              <div>
-                <strong>Operational Confirmation Rate ({tier2.inspection_confirmation_rate_pct.toFixed(1)}%):</strong> Measures vigilance team effectiveness on dispatched audits. Calculated as <code className="text-emerald-700 dark:text-emerald-400 font-mono">Confirmed Thefts ÷ Conclusive Completed Audits</code>. It excludes inconclusive visits from the denominator to reflect true field conclusive yield.
-              </div>
-              <div>
-                <strong>Machine Learning Metrics (PR-AUC, F1, Recall):</strong> Evaluated either against offline holdout test sets (Tier 1) or sufficient unbiased ground truth cohorts (Tier 3). Field hit rate must NEVER be presented to stakeholders as statistical ML precision.
-              </div>
+          <div className="p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2 shadow-2xs">
+            <div className="text-xs font-bold text-[#003566] dark:text-[#E0FBFC] uppercase tracking-wider">
+              Step 2: Calibrated Threshold (τ = 0.65)
             </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              Standard 0.50 cutoffs generate too many false alarms. Tuning on validation data established <strong>0.65</strong> as the optimal threshold, ensuring field squads are only sent when risk is substantial.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2 shadow-2xs">
+            <div className="text-xs font-bold text-[#003566] dark:text-[#E0FBFC] uppercase tracking-wider">
+              Step 3: Operational Queue Ranking
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              Final inspection priority combines <strong className="text-slate-900 dark:text-white">70% ML Risk Score</strong> + <strong className="text-slate-900 dark:text-white">15% Volatility Anomaly</strong> + <strong className="text-slate-900 dark:text-white">15% Meter Data Reliability</strong> to maximize squad hit rates.
+            </p>
           </div>
         </div>
-      )}
 
-      {/* =========================================================================
-          TAB 3: DATA QUALITY & FEATURE DRIFT
-         ========================================================================= */}
-      {activeTab === 'drift' && driftData && (
-        <div className="space-y-6">
-          {/* Summary Health Card */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5 shadow-2xs">
-            <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 gap-4">
-              <div>
-                <div className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  Population Stability Index (PSI) Telemetry
-                </div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white mt-0.5">
-                  Input Feature Drift Monitoring
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Reference Dataset: <span className="font-mono text-slate-700 dark:text-slate-300">{driftData.reference_dataset}</span> | Monitored Profiles: <strong className="font-mono">{driftData.monitored_profiles_count.toLocaleString()}</strong>
-                </p>
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <span
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase flex items-center space-x-1.5 ${
-                    driftData.overall_drift_alert_level === 'NOMINAL'
-                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
-                      : driftData.overall_drift_alert_level === 'ATTENTION'
-                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
-                      : 'bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300 border border-red-300 dark:border-red-800'
-                  }`}
-                >
-                  <span className="w-2 h-2 rounded-full bg-current"></span>
-                  <span>Alert Level: {driftData.overall_drift_alert_level}</span>
-                </span>
-                <span className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-mono font-bold text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
-                  Mean PSI: {driftData.average_psi_score.toFixed(4)}
-                </span>
-              </div>
+        {/* Golden Callout Box: High Risk is Suspicion, NOT Proof */}
+        <div className="p-5 rounded-lg bg-amber-50/70 dark:bg-[#001D3D]/90 border-2 border-amber-300 dark:border-[#FFC300]/60 space-y-2.5">
+          <div className="flex items-center space-x-2.5 text-amber-900 dark:text-[#FFD60A]">
+            <AlertTriangle className="w-5 h-5 shrink-0" />
+            <h3 className="font-bold text-sm tracking-tight">
+              Essential Principle: A High Risk Score is a Suspicion, Never Proof of Theft
+            </h3>
+          </div>
+          <p className="text-xs text-slate-700 dark:text-slate-200 leading-relaxed">
+            Machine learning models only analyze telemetry numbers; they cannot inspect physical wiring or interview occupants. A sudden 50% drop in electricity consumption can occur for completely innocent and legitimate reasons:
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 pt-1 text-xs">
+            <div className="p-2.5 rounded bg-white/80 dark:bg-slate-900/80 border border-amber-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+              <strong className="block text-slate-900 dark:text-white mb-0.5">☀️ Rooftop Solar</strong>
+              Customer installed solar panels and now generates their own electricity.
             </div>
-
-            {/* Quality Sub-KPIs */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-4">
-              <div className="p-3 rounded bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60">
-                <div className="text-[11px] font-semibold text-slate-500 uppercase">Mean Data Quality Score</div>
-                <div className="text-lg font-bold font-mono text-slate-900 dark:text-white mt-1">
-                  {(driftData.data_quality_health.mean_data_quality_score * 100).toFixed(1)} / 100
-                </div>
-              </div>
-              <div className="p-3 rounded bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60">
-                <div className="text-[11px] font-semibold text-slate-500 uppercase">High Quality Profiles</div>
-                <div className="text-lg font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-1">
-                  {driftData.data_quality_health.high_quality_profiles_pct.toFixed(1)}%
-                </div>
-              </div>
-              <div className="p-3 rounded bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60">
-                <div className="text-[11px] font-semibold text-slate-500 uppercase">Low Quality / Gaps</div>
-                <div className="text-lg font-bold font-mono text-amber-600 dark:text-amber-400 mt-1">
-                  {driftData.data_quality_health.low_quality_profiles_pct.toFixed(1)}%
-                </div>
-              </div>
-              <div className="p-3 rounded bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60">
-                <div className="text-[11px] font-semibold text-slate-500 uppercase">Missing Reading Tolerance</div>
-                <div className="text-lg font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-1 flex items-center space-x-1">
-                  <Check className="w-4 h-4" />
-                  <span>Compliant</span>
-                </div>
-              </div>
+            <div className="p-2.5 rounded bg-white/80 dark:bg-slate-900/80 border border-amber-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+              <strong className="block text-slate-900 dark:text-white mb-0.5">✈️ Extended Vacancy</strong>
+              The property is temporarily unoccupied or the family is traveling abroad.
             </div>
-
-            <div className="mt-4 p-3 bg-slate-100 dark:bg-slate-800/60 rounded text-xs text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-              <strong>Recommendation:</strong> {driftData.recommendation}
+            <div className="p-2.5 rounded bg-white/80 dark:bg-slate-900/80 border border-amber-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+              <strong className="block text-slate-900 dark:text-white mb-0.5">❄️ Seasonal Shutdown</strong>
+              Agricultural borewells or air conditioning turned off for winter months.
+            </div>
+            <div className="p-2.5 rounded bg-white/80 dark:bg-slate-900/80 border border-amber-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+              <strong className="block text-slate-900 dark:text-white mb-0.5">⚡ Meter Hardware Fault</strong>
+              The physical meter is malfunctioning, not intentionally tampered with.
             </div>
           </div>
+          <div className="text-[11px] font-semibold text-amber-900 dark:text-amber-200 pt-1">
+            Bottom Line: The model acts strictly as decision support to optimize patrol routes. Only a physical on-site audit by an authorized vigilance officer can establish the ground truth.
+          </div>
+        </div>
+      </section>
 
-          {/* Breakdown Table */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-2xs">
-            <div className="p-4 border-b border-slate-200 dark:border-slate-800">
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                Engineered Feature Drift Breakdown
-              </h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Calculated across 8 key statistical consumption features using 10-bin population stability scoring against reference training distribution.
+      {/* ========================================================================= */}
+      {/* SECTION 3: Visual Closed-Loop Feedback Journey */}
+      {/* ========================================================================= */}
+      <section className="space-y-5">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 rounded-lg bg-[#E0FBFC] dark:bg-[#003566] text-[#003566] dark:text-[#E0FBFC] flex items-center justify-center font-bold text-sm">
+            3
+          </div>
+          <div>
+            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+              The Closed-Loop Feedback Journey
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Visualizing how data flows from smart meters to field audits, into the feedback repository, and into governed model updates.
+            </p>
+          </div>
+        </div>
+
+        <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+          PowerConnect implements a closed-loop operational lifecycle. Field inspection outcomes flow directly back into our governance database as verified ground truth. Notice the strict boundary between what happens <strong>automatically</strong> and what requires <strong>human review or manual retraining</strong>:
+        </p>
+
+        {/* 6-Step Visual Diagram Flow */}
+        <div className="p-5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-6 shadow-2xs">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Step 1 */}
+            <div className="relative p-4 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase">Stage 1</span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                  Automated
+                </span>
+              </div>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Historical Consumption Data</h4>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                Smart meters transmit daily kilowatt-hour consumption. The system cleans telemetry, flags missing readings, and extracts 26 behavioral features.
               </p>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
-                  <tr>
-                    <th className="py-2.5 px-4">Feature Name</th>
-                    <th className="py-2.5 px-4">Reference Mean (Std)</th>
-                    <th className="py-2.5 px-4">Monitored Mean (Std)</th>
-                    <th className="py-2.5 px-4">PSI Score</th>
-                    <th className="py-2.5 px-4">Stability Status</th>
-                    <th className="py-2.5 px-4">Severity</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-mono">
-                  {driftData.feature_drift_breakdown.map((item) => (
-                    <tr key={item.feature_name} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                      <td className="py-3 px-4 font-sans font-semibold text-slate-900 dark:text-slate-100">
-                        {item.feature_name}
-                      </td>
-                      <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
-                        {item.baseline_mean.toFixed(2)} (±{item.baseline_std.toFixed(2)})
-                      </td>
-                      <td className="py-3 px-4 text-slate-800 dark:text-slate-200 font-semibold">
-                        {item.monitored_mean.toFixed(2)} (±{item.monitored_std.toFixed(2)})
-                      </td>
-                      <td className="py-3 px-4 text-emerald-700 dark:text-emerald-400 font-bold">
-                        {item.psi_score.toFixed(4)}
-                      </td>
-                      <td className="py-3 px-4 font-sans">
-                        <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                            item.status === 'STABLE'
-                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
-                              : item.status === 'MODERATE_DRIFT'
-                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
-                              : 'bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300'
-                          }`}
-                        >
-                          {item.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 font-sans text-slate-500">
-                        {item.severity}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {/* Step 2 */}
+            <div className="relative p-4 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase">Stage 2</span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                  Automated
+                </span>
+              </div>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Model Identifies Suspicion</h4>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                XGBoost evaluates the feature vector and outputs a suspicion probability. Accounts crossing the calibrated <code className="font-mono text-xs">τ = 0.65</code> cutoff are flagged.
+              </p>
             </div>
 
-            <div className="p-4 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-500">
-              <strong>Methodology Rule:</strong> {driftData.methodology_notes}
+            {/* Step 3 */}
+            <div className="relative p-4 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/60 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 uppercase">Stage 3</span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                  Human Review
+                </span>
+              </div>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Inspection Squad Review</h4>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                Vigilance supervisors examine flagged candidate accounts, cross-reference customer billing notes and solar permits, and dispatch field officers.
+              </p>
             </div>
+
+            {/* Step 4 */}
+            <div className="relative p-4 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/60 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 uppercase">Stage 4</span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                  Field Action
+                </span>
+              </div>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Physical On-Site Audit</h4>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                Officers inspect meter seals, terminal wiring, shunt switches, and overhead cables. Photographs and inspection evidence notes are recorded.
+              </p>
+            </div>
+
+            {/* Step 5 */}
+            <div className="relative p-4 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/60 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 uppercase">Stage 5</span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                  Verified Storage
+                </span>
+              </div>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Audit Stored in Feedback DB</h4>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                Conclusive audits (<strong className="text-slate-900 dark:text-white">THEFT_CONFIRMED</strong> or <strong className="text-slate-900 dark:text-white">NO_THEFT_FOUND</strong>) are stored as ground truth. Inconclusive visits are quarantined.
+              </p>
+            </div>
+
+            {/* Step 6 */}
+            <div className="relative p-4 rounded-lg bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/60 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-purple-700 dark:text-purple-400 uppercase">Stage 6</span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-purple-100 dark:bg-purple-900/60 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-700">
+                  Manual Retraining
+                </span>
+              </div>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Controlled Candidate Update</h4>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                When sufficient verified feedback accumulates (n ≥ 50), a supervisor triggers controlled retraining. A candidate model is promoted only if it beats the benchmark.
+              </p>
+            </div>
+          </div>
+
+          {/* Operational Clarity Callout */}
+          <div className="p-4 rounded bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-1.5 text-xs">
+            <div className="font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+              <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+              <span>What is Automatic vs. What is Controlled in PowerConnect Today?</span>
+            </div>
+            <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+              <strong>Telemetry ingestion, scoring, and drift calculation run automatically.</strong> However, model retraining is <strong>NEVER automatic</strong>. Retraining without human validation causes catastrophic drift. PowerConnect enforces a strict 50-sample verified feedback gate and requires an authorized supervisor to explicitly approve any candidate model before it can replace Champion v1.0.0.
+            </p>
           </div>
         </div>
-      )}
+      </section>
 
-      {/* =========================================================================
-          TAB 4: VERIFIED FIELD FEEDBACK REVIEW
-         ========================================================================= */}
-      {activeTab === 'feedback' && feedbackData && (
-        <div className="space-y-6">
-          {/* Top Metrics Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-2xs">
-              <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Field Audits</div>
-              <div className="text-2xl font-bold font-mono text-slate-900 dark:text-white mt-1">
-                {feedbackData.total}
-              </div>
-              <div className="text-[11px] text-slate-500 mt-0.5">Recorded by inspection vigilance squads</div>
-            </div>
-
-            <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-2xs">
-              <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-                Eligible Verified Labels
-              </div>
-              <div className="text-2xl font-bold font-mono text-emerald-700 dark:text-emerald-400 mt-1">
-                {feedbackData.eligible_count}
-              </div>
-              <div className="text-[11px] text-slate-500 mt-0.5">THEFT_CONFIRMED (1) or NO_THEFT_FOUND (0)</div>
-            </div>
-
-            <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-2xs">
-              <div className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
-                Ineligible / Inconclusive Audits
-              </div>
-              <div className="text-2xl font-bold font-mono text-amber-700 dark:text-amber-400 mt-1">
-                {feedbackData.ineligible_count}
-              </div>
-              <div className="text-[11px] text-slate-500 mt-0.5">Strictly quarantined from supervised training</div>
-            </div>
+      {/* ========================================================================= */}
+      {/* SECTION 4: How the Model Can Improve Over Time */}
+      {/* ========================================================================= */}
+      <section className="space-y-5">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 rounded-lg bg-[#E0FBFC] dark:bg-[#003566] text-[#003566] dark:text-[#E0FBFC] flex items-center justify-center font-bold text-sm">
+            4
           </div>
-
-          {/* Feedback Review Table */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-2xs">
-            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Supervisory Feedback Quality & Provenance Review
-                </h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Verify ground truth labels, inspect field officer notes, and manage eligibility for future retraining cohorts.
-                </p>
-              </div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">
-                Showing <strong>{feedbackData.items.length}</strong> records
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
-                  <tr>
-                    <th className="py-2.5 px-3">Case / Consumer</th>
-                    <th className="py-2.5 px-3">Grid Location</th>
-                    <th className="py-2.5 px-3">Verified Outcome</th>
-                    <th className="py-2.5 px-3">Ground Truth</th>
-                    <th className="py-2.5 px-3">Evidence Notes</th>
-                    <th className="py-2.5 px-3">Verified By</th>
-                    <th className="py-2.5 px-3 text-center">Retraining Eligible</th>
-                    <th className="py-2.5 px-3 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {feedbackData.items.map((item) => (
-                    <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                      <td className="py-3 px-3">
-                        <div className="font-semibold text-slate-900 dark:text-white">{item.case_number}</div>
-                        <div className="text-[11px] text-slate-500">{item.consumer_name}</div>
-                      </td>
-                      <td className="py-3 px-3 text-slate-600 dark:text-slate-400">
-                        <div>{item.zone}</div>
-                        <div className="text-[10px] text-slate-400">{item.feeder}</div>
-                      </td>
-                      <td className="py-3 px-3">
-                        <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                            item.verified_outcome === 'THEFT_CONFIRMED'
-                              ? 'bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300'
-                              : item.verified_outcome === 'NO_THEFT_FOUND'
-                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
-                              : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
-                          }`}
-                        >
-                          {item.verified_outcome}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 font-mono font-bold">
-                        {item.ground_truth_label === 1 ? (
-                          <span className="text-red-600 dark:text-red-400">1 (Positive)</span>
-                        ) : item.ground_truth_label === 0 ? (
-                          <span className="text-emerald-600 dark:text-emerald-400">0 (Negative)</span>
-                        ) : (
-                          <span className="text-slate-400 font-sans italic text-[11px]">Excluded (null)</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3 max-w-xs text-slate-600 dark:text-slate-400 text-[11px]">
-                        <p className="line-clamp-2" title={item.evidence_notes || item.findings_summary}>
-                          {item.evidence_notes || item.findings_summary || 'No notes provided'}
-                        </p>
-                      </td>
-                      <td className="py-3 px-3 text-slate-500 text-[11px]">
-                        <div>{item.verified_by || 'Officer'}</div>
-                        <div className="text-[10px] text-slate-400">
-                          {new Date(item.verified_at).toLocaleDateString()}
-                        </div>
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                            item.is_eligible_for_retraining
-                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
-                              : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-                          }`}
-                        >
-                          {item.is_eligible_for_retraining ? 'Eligible' : 'Quarantined'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 text-right">
-                        <button
-                          onClick={() => handleToggleEligibility(item.id, item.is_eligible_for_retraining)}
-                          className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-colors ${
-                            item.is_eligible_for_retraining
-                              ? 'bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-700 dark:text-slate-200'
-                              : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                          }`}
-                        >
-                          {item.is_eligible_for_retraining ? 'Exclude' : 'Approve'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="p-4 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-500">
-              <strong>Ground-Truth Integrity Directive:</strong> Inconclusive audits remain permanently ineligible for positive/negative label attribution. Uninspected consumers are NEVER backfilled as non-theft negatives.
-            </div>
+          <div>
+            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+              How the Model Can Improve Over Time
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Concrete examples of confirmed theft and clean outcomes feeding better training signal, plus why improvement is a goal, not a guarantee.
+            </p>
           </div>
         </div>
-      )}
 
-      {/* =========================================================================
-          TAB 5: CANDIDATE TRAINING & REGISTRY
-         ========================================================================= */}
-      {activeTab === 'lifecycle' && (
-        <div className="space-y-6">
-          {/* Candidate Training Trigger Box */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5 shadow-2xs">
-            <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 gap-4">
-              <div>
-                <div className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center space-x-1.5">
-                  <GitBranch className="w-3.5 h-3.5" />
-                  <span>Controlled Candidate Model Development</span>
-                </div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white mt-0.5">
-                  Controlled Candidate Training & Evaluation Pipeline
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
-                  Trains and evaluates candidate model architectures against the active champion with strict train/val/test data leakage prevention.
-                </p>
-              </div>
+        <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+          AI models improve through verified examples of what theft looks like and what normal variations look like. Here is how field inspectors turn real-world observations into high-value training signal:
+        </p>
 
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                <label className="flex items-center space-x-2 text-xs text-slate-600 dark:text-slate-300 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={allowBenchmarkDemo}
-                    onChange={(e) => setAllowBenchmarkDemo(e.target.checked)}
-                    className="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4"
-                  />
-                  <span>Allow Benchmark Demonstration Run</span>
-                </label>
-
-                <button
-                  onClick={handleRunCandidateTraining}
-                  disabled={trainingLoading}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-400 text-white rounded-md text-xs font-bold flex items-center space-x-2 shadow-2xs transition-colors"
-                >
-                  {trainingLoading ? (
-                    <>
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      <span>Evaluating Candidate...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>Initiate Candidate Evaluation</span>
-                    </>
-                  )}
-                </button>
-              </div>
+        {/* 3 Outcome Example Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Card A: Confirmed Theft */}
+          <div className="p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5 shadow-2xs">
+            <div className="flex items-center space-x-2 text-red-600 dark:text-red-400">
+              <CheckCircle2 className="w-4 h-4" />
+              <h4 className="font-bold text-xs uppercase tracking-wider">Example A: Confirmed Theft</h4>
             </div>
-
-            {/* Safeguard Info Banner */}
-            <div className="mt-4 p-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 rounded-md text-xs text-slate-600 dark:text-slate-300 space-y-1">
-              <div className="flex items-center space-x-2 font-semibold text-slate-800 dark:text-slate-200">
-                <Lock className="w-4 h-4 text-emerald-600" />
-                <span>Automated Retraining Guard Enforced (Minimum 50 Verified Labels Required)</span>
-              </div>
+            <div className="text-xs text-slate-700 dark:text-slate-300 space-y-1.5">
               <p>
-                In compliance with Section 7 of Phase 6 specifications, the pipeline halts safely and refuses candidate creation if available verified labels are insufficient. Training sets are strictly separated, and SMOTE/scalers are fitted exclusively on the training partition to prevent leakage.
+                <strong>Field Finding:</strong> Officer finds a physical bypass wire shunting the meter during peak evening hours, causing a 45% drop in recorded daily usage.
+              </p>
+              <p>
+                <strong>Logged Label:</strong> <code className="font-mono text-[11px] bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 px-1 py-0.5 rounded">THEFT_CONFIRMED (Label = 1)</code>
+              </p>
+              <p className="text-slate-600 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800">
+                <strong>Training Value:</strong> Teaches the model that this exact combination of quarterly variance drop and low lag-1 autocorrelation represents verified theft, increasing sensitivity to similar signatures elsewhere.
               </p>
             </div>
+          </div>
 
-            {/* Training Result Box */}
-            {trainingResult && (
-              <div
-                className={`mt-4 p-4 rounded-lg border text-xs ${
-                  trainingResult.success
-                    ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-100'
-                    : 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-100'
-                }`}
-              >
-                <div className="flex items-center space-x-2 font-bold text-sm">
-                  {trainingResult.success ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  ) : (
-                    <AlertTriangle className="w-4 h-4 text-amber-600" />
-                  )}
-                  <span>Status: {trainingResult.status}</span>
+          {/* Card B: Clean Inspection */}
+          <div className="p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5 shadow-2xs">
+            <div className="flex items-center space-x-2 text-emerald-600 dark:text-emerald-400">
+              <ShieldCheck className="w-4 h-4" />
+              <h4 className="font-bold text-xs uppercase tracking-wider">Example B: Clean Inspection</h4>
+            </div>
+            <div className="text-xs text-slate-700 dark:text-slate-300 space-y-1.5">
+              <p>
+                <strong>Field Finding:</strong> Officer finds an intact, sealed meter with zero tampering. The 50% consumption plunge occurred because the customer installed rooftop solar panels.
+              </p>
+              <p>
+                <strong>Logged Label:</strong> <code className="font-mono text-[11px] bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-1 py-0.5 rounded">NO_THEFT_FOUND (Label = 0)</code>
+              </p>
+              <p className="text-slate-600 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800">
+                <strong>Training Value:</strong> Teaches the model that solar-style daytime drop profiles are innocent, directly reducing future false alarms and sparing innocent homeowners from repeated inspections.
+              </p>
+            </div>
+          </div>
+
+          {/* Card C: Inconclusive Audit */}
+          <div className="p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5 shadow-2xs">
+            <div className="flex items-center space-x-2 text-slate-500 dark:text-slate-400">
+              <Lock className="w-4 h-4" />
+              <h4 className="font-bold text-xs uppercase tracking-wider">Example C: Inconclusive Audit</h4>
+            </div>
+            <div className="text-xs text-slate-700 dark:text-slate-300 space-y-1.5">
+              <p>
+                <strong>Field Finding:</strong> Premises locked, aggressive dog prevents entry, or meter is inaccessible behind high walls. No physical check was possible.
+              </p>
+              <p>
+                <strong>Logged Label:</strong> <code className="font-mono text-[11px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-1 py-0.5 rounded">INCONCLUSIVE (Label = NULL)</code>
+              </p>
+              <p className="text-slate-600 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800">
+                <strong>Quarantine Rule:</strong> Disqualified from training. Inconclusive visits must NEVER be assumed innocent or guilty, protecting training data from noise and false assumptions.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Cautionary Principle: Improvement is an Objective, Not a Guarantee */}
+        <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2 text-xs">
+          <div className="font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+            <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+            <span>Why Improvement is an Objective to Measure, Not a Guarantee</span>
+          </div>
+          <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+            More feedback data does not automatically make an AI smarter. Because field squads naturally inspect accounts that the model already suspects, newly collected feedback suffers from <strong>selection bias</strong>. Blindly retraining on this skewed data could cause the model to overfit or lose accuracy on normal customer behavior. That is why candidate models must always be tested against the untouched benchmark before promotion.
+          </p>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* SECTION 5: Model Evaluation */}
+      {/* ========================================================================= */}
+      <section className="space-y-5">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 rounded-lg bg-[#E0FBFC] dark:bg-[#003566] text-[#003566] dark:text-[#E0FBFC] flex items-center justify-center font-bold text-sm">
+            5
+          </div>
+          <div>
+            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+              Model Evaluation
+            </h2>
+          </div>
+        </div>
+
+        <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+          Instead of relying on abstract mathematical curves, we evaluate our model based on practical questions that matter to utility operations: How many real thefts did we catch? How many innocent customers were bothered? How much more efficient are our field squads?
+        </p>
+
+        {/* 4 Outcome Matrix Breakdown in Plain English */}
+        <div className="p-5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              The Real Test Set Story (6,356 Audited Consumer Accounts)
+            </h3>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">Zero-leakage holdout test</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* True Positives */}
+            <div className="p-3.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 space-y-1">
+              <div className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 uppercase">
+                Confirmed Thefts Caught
+              </div>
+              <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
+                {tier1.confusion_matrix.true_positives}
+              </div>
+              <div className="text-xs text-slate-600 dark:text-slate-300">
+                True Positives: Real theft correctly identified and confirmed by field inspection. Revenue recovery achieved.
+              </div>
+            </div>
+
+            {/* True Negatives */}
+            <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1">
+              <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase">
+                Innocent Left Alone
+              </div>
+              <div className="text-2xl font-bold text-slate-800 dark:text-slate-200">
+                {tier1.confusion_matrix.true_negatives.toLocaleString()}
+              </div>
+              <div className="text-xs text-slate-600 dark:text-slate-300">
+                True Negatives: Lawful customers whose normal consumption was recognized. Zero unnecessary visits dispatched.
+              </div>
+            </div>
+
+            {/* False Positives */}
+            <div className="p-3.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300 uppercase">False Alarms</span>
+                <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/60 px-1 py-0.2 rounded">
+                  5.3% of normal
+                </span>
+              </div>
+              <div className="text-2xl font-bold text-amber-700 dark:text-amber-400">
+                {tier1.confusion_matrix.false_positives}
+              </div>
+              <div className="text-xs text-slate-600 dark:text-slate-300">
+                False Positives: Innocent accounts flagged (solar panels, vacations). Squad found no theft. Represents wasted visits.
+              </div>
+            </div>
+
+            {/* False Negatives */}
+            <div className="p-3.5 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/80 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-red-800 dark:text-red-300 uppercase">Missed Thefts</span>
+                <span className="text-[10px] font-bold text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/60 px-1 py-0.2 rounded">
+                  63.8% of theft
+                </span>
+              </div>
+              <div className="text-2xl font-bold text-red-700 dark:text-red-400">
+                {tier1.confusion_matrix.false_negatives}
+              </div>
+              <div className="text-xs text-slate-600 dark:text-slate-300">
+                False Negatives: Real thefts where tampering was subtle and stayed below the 0.65 threshold. Continued revenue loss.
+              </div>
+            </div>
+          </div>
+
+          <div className="text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/40 p-3 rounded border border-slate-200 dark:border-slate-700/60">
+            <strong className="text-slate-900 dark:text-white">Understanding the Trade-off:</strong> Lowering the threshold below 0.65 would catch more missed thefts, but it would dramatically increase false alarms and overwhelm inspection squads. Raising the threshold above 0.65 would eliminate false alarms, but allow more theft to slip by undetected.
+          </div>
+        </div>
+
+        {/* Inspection Capacity: Top 500 Strategy Comparison */}
+        <div className="p-5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                Real-World Inspection Capacity: Auditing 500 Meters
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Comparing traditional random audits against PowerConnect ML-assisted prioritization.
+              </p>
+            </div>
+            <span className="px-2.5 py-1 rounded bg-[#E0FBFC] text-[#003566] dark:bg-[#003566] dark:text-[#E0FBFC] font-bold text-xs">
+              4.9x Efficiency Boost
+            </span>
+          </div>
+
+          {/* Side by Side Comparison Bars */}
+          <div className="space-y-4 pt-1">
+            {/* Strategy 1: Random Selection */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-slate-700 dark:text-slate-300">
+                  Traditional Auditing (Random Meter Selection)
+                </span>
+                <span className="text-slate-500 dark:text-slate-400 font-medium">
+                  <strong>40 thefts confirmed</strong> out of 500 inspections (8.0% hit rate · 1.0x baseline)
+                </span>
+              </div>
+              <div className="h-5 w-full bg-slate-100 dark:bg-slate-800 rounded overflow-hidden flex border border-slate-200 dark:border-slate-700">
+                <div style={{ width: '8.0%' }} className="bg-slate-400 text-white flex items-center justify-center text-[10px] font-bold">
+                  8%
                 </div>
-                <p className="mt-1 text-xs">{trainingResult.message}</p>
-
-                {/* Candidate Comparison View */}
-                {trainingResult.comparison && (
-                  <div className="mt-4 pt-4 border-t border-emerald-200 dark:border-emerald-800 space-y-3">
-                    <div className="font-bold uppercase tracking-wider text-[11px] text-emerald-800 dark:text-emerald-300">
-                      Side-by-Side Model Evaluation Comparison
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Active Champion */}
-                      <div className="p-3 rounded bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800 font-mono text-xs">
-                        <div className="font-sans font-bold text-slate-800 dark:text-slate-200 mb-2">
-                          Active Champion ({trainingResult.comparison.active_champion.version})
-                        </div>
-                        <div className="space-y-1 text-slate-600 dark:text-slate-400">
-                          <div>PR-AUC: <strong>{trainingResult.comparison.active_champion.pr_auc.toFixed(4)}</strong></div>
-                          <div>ROC-AUC: <strong>{trainingResult.comparison.active_champion.roc_auc.toFixed(4)}</strong></div>
-                          <div>F1-Score: <strong>{trainingResult.comparison.active_champion.f1_score.toFixed(4)}</strong></div>
-                          <div>Threshold: <strong>{trainingResult.comparison.active_champion.threshold.toFixed(2)}</strong></div>
-                          <div className="font-sans text-[11px] text-emerald-600 font-bold mt-1">STATUS: ACTIVE IN PRODUCTION</div>
-                        </div>
-                      </div>
-
-                      {/* Evaluated Candidate */}
-                      <div className="p-3 rounded bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800 font-mono text-xs">
-                        <div className="font-sans font-bold text-slate-800 dark:text-slate-200 mb-2">
-                          Evaluated Candidate ({trainingResult.comparison.evaluated_candidate.version})
-                        </div>
-                        <div className="space-y-1 text-slate-600 dark:text-slate-400">
-                          <div>PR-AUC: <strong>{trainingResult.comparison.evaluated_candidate.pr_auc.toFixed(4)}</strong></div>
-                          <div>ROC-AUC: <strong>{trainingResult.comparison.evaluated_candidate.roc_auc.toFixed(4)}</strong></div>
-                          <div>F1-Score: <strong>{trainingResult.comparison.evaluated_candidate.f1_score.toFixed(4)}</strong></div>
-                          <div>Threshold: <strong>{trainingResult.comparison.evaluated_candidate.threshold.toFixed(2)}</strong></div>
-                          <div className="font-sans text-[11px] text-blue-600 font-bold mt-1">
-                            F1 Variance: {trainingResult.comparison.evaluated_candidate.variance_vs_champion_f1}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Leakage Safeguards Verified */}
-                    {trainingResult.leakage_safeguards_verified && (
-                      <div className="p-3 rounded bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800 text-[11px] text-slate-600 dark:text-slate-300">
-                        <div className="font-bold text-slate-900 dark:text-white mb-1.5">Leakage Safeguards Audit Verification:</div>
-                        <div className="grid grid-cols-2 gap-1 font-mono">
-                          <div>Train/Val/Test Isolation: [OK]</div>
-                          <div>Imputer/Scaler fit on train only: [OK]</div>
-                          <div>SMOTE strictly in training partition: [OK]</div>
-                          <div>Held-out test set uncontaminated: [OK]</div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                <div style={{ width: '92.0%' }} className="bg-slate-200 dark:bg-slate-700/60 flex items-center px-2 text-[10px] text-slate-500 dark:text-slate-400">
+                  460 Wasted Inspections (Innocent Meters)
+                </div>
               </div>
-            )}
-          </div>
+            </div>
 
-          {/* Model Registry Table */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-2xs">
-            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Auditable Model Registry & Version History
-                </h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Traceable record of all trained candidate and champion models stored in database registry.
-                </p>
+            {/* Strategy 2: PowerConnect ML Risk */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-[#003566] dark:text-[#E0FBFC] flex items-center space-x-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#FFC300]" />
+                  <span>PowerConnect AI Prioritization (Highest Risk Accounts)</span>
+                </span>
+                <span className="text-[#003566] dark:text-[#E0FBFC] font-bold">
+                  <strong>195 thefts confirmed</strong> out of 500 inspections (39.0% hit rate · 4.9x improvement)
+                </span>
               </div>
-
-              {activeVersion !== 'v1.0.0' && (
-                <button
-                  onClick={() => setRollbackModalOpen(true)}
-                  className="px-3 py-1.5 rounded bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold flex items-center space-x-1.5 transition-colors"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Rollback to Champion v1.0.0</span>
-                </button>
-              )}
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
-                  <tr>
-                    <th className="py-2.5 px-3">Model Version</th>
-                    <th className="py-2.5 px-3">Algorithm</th>
-                    <th className="py-2.5 px-3">Threshold</th>
-                    <th className="py-2.5 px-3">Lifecycle Status</th>
-                    <th className="py-2.5 px-3">PR-AUC</th>
-                    <th className="py-2.5 px-3">F1-Score</th>
-                    <th className="py-2.5 px-3">Registered At</th>
-                    <th className="py-2.5 px-3 text-right">Governance Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-mono">
-                  {registry.map((item) => (
-                    <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                      <td className="py-3 px-3 font-semibold text-slate-900 dark:text-white font-mono">
-                        {item.model_version}
-                      </td>
-                      <td className="py-3 px-3 font-sans text-slate-600 dark:text-slate-400">
-                        {item.algorithm}
-                      </td>
-                      <td className="py-3 px-3">{item.threshold.toFixed(2)}</td>
-                      <td className="py-3 px-3 font-sans">
-                        <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                            item.status === 'ACTIVE'
-                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
-                              : item.status === 'CANDIDATE'
-                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300'
-                              : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-                          }`}
-                        >
-                          {item.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 text-emerald-700 dark:text-emerald-400 font-bold">
-                        {item.metrics.pr_auc.toFixed(4)}
-                      </td>
-                      <td className="py-3 px-3">{item.metrics.f1_score.toFixed(4)}</td>
-                      <td className="py-3 px-3 font-sans text-slate-400 text-[11px]">
-                        {new Date(item.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="py-3 px-3 text-right font-sans">
-                        {item.status === 'CANDIDATE' ? (
-                          <button
-                            onClick={() => setPromoteModalVersion(item.model_version)}
-                            className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold transition-colors"
-                          >
-                            Authorize Promotion
-                          </button>
-                        ) : item.status === 'ACTIVE' ? (
-                          <span className="text-emerald-600 dark:text-emerald-400 text-[11px] font-bold">
-                            Serving Inference
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 text-[11px]">Archived</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="h-5 w-full bg-slate-100 dark:bg-slate-800 rounded overflow-hidden flex border border-[#003566]/30 dark:border-[#C2DFE3]/30">
+                <div style={{ width: '39.0%' }} className="bg-[#003566] dark:bg-[#E0FBFC] text-[#E0FBFC] dark:text-[#003566] flex items-center justify-center text-[10px] font-bold">
+                  39% (195 Confirmed Thefts)
+                </div>
+                <div style={{ width: '61.0%' }} className="bg-[#E0FBFC]/50 dark:bg-[#003566]/40 flex items-center px-2 text-[10px] text-slate-600 dark:text-slate-300">
+                  305 False Dispatches (Down from 460)
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Promotion Authorization Modal */}
-      {promoteModalVersion && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg max-w-md w-full p-6 space-y-4 shadow-xl">
-            <div className="flex items-center space-x-2 text-emerald-700 dark:text-emerald-400 font-bold text-base">
-              <ShieldCheck className="w-5 h-5" />
-              <span>Authorize Model Promotion</span>
-            </div>
-            <p className="text-xs text-slate-600 dark:text-slate-400">
-              You are about to promote candidate model <strong className="font-mono text-slate-900 dark:text-white">{promoteModalVersion}</strong> to active production status.
-            </p>
-            <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded text-xs text-amber-800 dark:text-amber-200">
-              <strong>Audit Notice:</strong> This action switches the live inference prediction path to use this candidate model. All subsequent risk scores will be produced by this version. An audit log entry will record your user identity.
-            </div>
-            <div className="flex justify-end space-x-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setPromoteModalVersion(null)}
-                disabled={submittingAction}
-                className="px-4 py-2 rounded text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => handlePromoteCandidate(promoteModalVersion)}
-                disabled={submittingAction}
-                className="px-4 py-2 rounded text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center space-x-1.5"
-              >
-                {submittingAction && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                <span>Confirm Promotion</span>
-              </button>
-            </div>
-          </div>
+          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed bg-slate-50 dark:bg-slate-800/40 p-3 rounded border border-slate-200 dark:border-slate-700/60">
+            <strong className="text-slate-900 dark:text-white">Operational Meaning:</strong> For the exact same budget and workforce hours (500 audits/month), deploying field teams with PowerConnect finds <strong>155 additional electricity theft cases every month</strong> compared to random patrol sweeps.
+          </p>
         </div>
-      )}
-
-      {/* Rollback Authorization Modal */}
-      {rollbackModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg max-w-md w-full p-6 space-y-4 shadow-xl">
-            <div className="flex items-center space-x-2 text-amber-700 dark:text-amber-400 font-bold text-base">
-              <RotateCcw className="w-5 h-5" />
-              <span>Emergency Rollback to Champion</span>
-            </div>
-            <p className="text-xs text-slate-600 dark:text-slate-400">
-              This action immediately restores champion model <strong className="font-mono text-slate-900 dark:text-white">v1.0.0</strong> as the active inference engine and retires any active candidate model.
-            </p>
-            <div className="flex justify-end space-x-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setRollbackModalOpen(false)}
-                disabled={submittingAction}
-                className="px-4 py-2 rounded text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleRollback}
-                disabled={submittingAction}
-                className="px-4 py-2 rounded text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white flex items-center space-x-1.5"
-              >
-                {submittingAction && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                <span>Execute Rollback</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      </section>
     </div>
   );
 };

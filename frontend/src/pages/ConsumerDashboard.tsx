@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { PowerConnectBrand } from '../components/common/PowerConnectLogo';
 import {
   AlertCircle,
@@ -10,6 +10,8 @@ import {
   Bell,
   LogOut,
   ChevronRight,
+  ChevronDown,
+  Zap,
   HelpCircle,
   ExternalLink,
   ShieldCheck,
@@ -22,7 +24,11 @@ import {
   TrendingUp,
   TrendingDown,
   ArrowLeft,
-  Compass
+  Compass,
+  Download,
+  Receipt,
+  RefreshCw,
+  Lock
 } from 'lucide-react';
 import {
   AreaChart,
@@ -42,20 +48,61 @@ import type {
   ConsumerProfile,
   ConsumerUsage,
   BillItem,
+  PaymentTransactionItem,
+  VerifyPaymentResponse,
   ConsumerIssueItem,
   NotificationItem,
   BoardPostItem
 } from '../types';
+
+// Razorpay Checkout Script Dynamic Loader
+const loadRazorpayScript = (): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if ((window as any).Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
 
 export const ConsumerDashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === 'dark';
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Navigation tab state
   const [activeTab, setActiveTab] = useState<'overview' | 'usage' | 'billing' | 'issues'>('overview');
   const [tourOpen, setTourOpen] = useState<boolean>(false);
+
+  // Sync activeTab and selectedBillId from URL search parameters (?tab=billing&bill_id=117)
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    const billIdParam = searchParams.get('bill_id');
+
+    if (tabParam === 'billing' || billIdParam) {
+      setActiveTab('billing');
+      if (billIdParam) {
+        const parsed = parseInt(billIdParam, 10);
+        if (!isNaN(parsed)) {
+          setSelectedBillId(parsed);
+        }
+      }
+    } else if (tabParam === 'usage') {
+      setActiveTab('usage');
+    } else if (tabParam === 'issues') {
+      setActiveTab('issues');
+    } else if (tabParam === 'overview') {
+      setActiveTab('overview');
+    }
+  }, [searchParams]);
 
   // Auto-trigger guided tour on first login if onboarding is not completed
   useEffect(() => {
@@ -68,6 +115,7 @@ export const ConsumerDashboard: React.FC = () => {
   const [profile, setProfile] = useState<ConsumerProfile | null>(null);
   const [usage, setUsage] = useState<ConsumerUsage | null>(null);
   const [bills, setBills] = useState<BillItem[]>([]);
+  const [billsError, setBillsError] = useState<string | null>(null);
   const [issues, setIssues] = useState<ConsumerIssueItem[]>([]);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [announcements, setAnnouncements] = useState<BoardPostItem[]>([]);
@@ -86,25 +134,62 @@ export const ConsumerDashboard: React.FC = () => {
   const [showNotificationsModal, setShowNotificationsModal] = useState<boolean>(false);
   const [notifFilter, setNotifFilter] = useState<'all' | 'unread'>('all');
 
+  // Billing & Payment States
+  const [selectedBillId, setSelectedBillId] = useState<number | null>(null);
+  const [billTransactions, setBillTransactions] = useState<PaymentTransactionItem[]>([]);
+  const [paymentAmount, setPaymentAmount] = useState<string>('');
+  const [isProcessingPayment, setIsProcessingPayment] = useState<boolean>(false);
+  const isProcessingPaymentRef = useRef<boolean>(false);
+  const rzpInstanceRef = useRef<any>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [paymentSuccess, setPaymentSuccess] = useState<VerifyPaymentResponse | null>(null);
+  const [isDownloadingBillPdf, setIsDownloadingBillPdf] = useState<boolean>(false);
+  const [downloadingReceiptId, setDownloadingReceiptId] = useState<number | null>(null);
+
+  // Function to reload bills cleanly
+  const reloadBills = async () => {
+    try {
+      const data = await api.getMyBills();
+      setBills(data || []);
+      setBillsError(null);
+    } catch (err: any) {
+      setBillsError(err.message || 'Failed to load billing records from backend.');
+    }
+  };
+
   // Load consumer records from backend
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
     setError(null);
+    setBillsError(null);
 
     Promise.all([
       api.getConsumerProfile().catch(() => null),
       api.getConsumerUsage().catch(() => null),
-      api.getMyBills().catch(() => []),
+      api.getMyBills()
+        .then((billsData) => {
+          if (isMounted) {
+            setBills(billsData || []);
+            setBillsError(null);
+          }
+          return billsData;
+        })
+        .catch((bErr: any) => {
+          if (isMounted) {
+            setBills([]);
+            setBillsError(bErr.message || 'Unable to retrieve billing records from the server.');
+          }
+          return [];
+        }),
       api.getMyIssues().catch(() => []),
       api.getNotifications().catch(() => []),
       api.getBoardPosts().catch(() => [])
     ])
-      .then(([profData, usageData, billsData, issuesData, notifData, postsData]) => {
+      .then(([profData, usageData, _billsData, issuesData, notifData, postsData]) => {
         if (!isMounted) return;
         setProfile(profData);
         setUsage(usageData);
-        setBills(billsData || []);
         setIssues(issuesData || []);
         setNotifications(notifData || []);
         setAnnouncements(postsData?.slice(0, 3) || []);
@@ -175,19 +260,271 @@ export const ConsumerDashboard: React.FC = () => {
   const handleNotificationNavigate = (linkUrl?: string) => {
     setShowNotificationsModal(false);
     if (!linkUrl) return;
-    if (linkUrl.includes('/bills')) setActiveTab('billing');
-    else if (linkUrl.includes('/issues')) setActiveTab('issues');
-    else if (linkUrl.includes('/usage')) setActiveTab('usage');
+
+    // Extract bill_id parameter if present
+    let targetBillId: number | null = null;
+    const billMatch = linkUrl.match(/[?&]bill_id=(\d+)/) || linkUrl.match(/\/bills\/(\d+)/);
+    if (billMatch) {
+      targetBillId = parseInt(billMatch[1], 10);
+    }
+
+    if (targetBillId || linkUrl.includes('/bills') || linkUrl.includes('BILL') || linkUrl.includes('billing') || linkUrl.includes('payment') || linkUrl.includes('consumer-portal')) {
+      setActiveTab('billing');
+      if (targetBillId) {
+        setSelectedBillId(targetBillId);
+        setSearchParams({ tab: 'billing', bill_id: String(targetBillId) });
+      } else {
+        setSearchParams({ tab: 'billing' });
+      }
+    }
+    else if (linkUrl.includes('/issues')) {
+      setActiveTab('issues');
+      setSearchParams({ tab: 'issues' });
+    }
+    else if (linkUrl.includes('/usage')) {
+      setActiveTab('usage');
+      setSearchParams({ tab: 'usage' });
+    }
     else if (linkUrl.includes('/updates') || linkUrl.includes('board-communication') || linkUrl.includes('announcement')) {
       navigate('/board-communication');
     }
-    else if (linkUrl.includes('/account')) setActiveTab('overview');
+    else if (linkUrl.includes('/account')) {
+      setActiveTab('overview');
+      setSearchParams({ tab: 'overview' });
+    }
   };
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
-  // Active or most recent bill
-  const currentBill = bills[0] || null;
+  // Active or most relevant unpaid bill, falling back to latest bill
+  const currentBill = useMemo(() => {
+    const activeUnpaid = bills.find(b => b.status === 'PENDING' || b.status === 'PARTIALLY_PAID' || b.status === 'OVERDUE');
+    return activeUnpaid || bills[0] || null;
+  }, [bills]);
+
+  // Selected bill for detailed payment and inspection
+  const selectedBill = useMemo(() => {
+    if (selectedBillId) {
+      const found = bills.find(b => b.id === selectedBillId);
+      if (found) return found;
+      // If a specific bill ID was requested but is not in the consumer's bills list,
+      // return null so that an explicit missing bill alert is shown
+      return null;
+    }
+    return currentBill;
+  }, [bills, selectedBillId, currentBill]);
+
+  const isRequestedBillMissing = selectedBillId !== null && selectedBill === null && bills.length > 0;
+
+  // Fetch transaction ledger when selected bill changes
+  useEffect(() => {
+    if (selectedBill?.id) {
+      api.getBillPayments(selectedBill.id)
+        .then(setBillTransactions)
+        .catch(() => setBillTransactions([]));
+    }
+  }, [selectedBill?.id]);
+
+  // Download Bill PDF Handler
+  const handleDownloadBillPdf = async (billId: number, billNumber: string) => {
+    try {
+      setIsDownloadingBillPdf(true);
+      const blob = await api.downloadBillPdf(billId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const cleanNo = billNumber.replace(/\//g, '-').replace(/\s+/g, '_');
+      a.download = `PowerConnect_Bill_${cleanNo}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err: any) {
+      alert(err.message || 'Failed to download bill PDF.');
+    } finally {
+      setIsDownloadingBillPdf(false);
+    }
+  };
+
+  // Download Payment Receipt PDF Handler
+  const handleDownloadReceiptPdf = async (paymentId: number, receiptNumber: string) => {
+    try {
+      setDownloadingReceiptId(paymentId);
+      const blob = await api.downloadPaymentReceiptPdf(paymentId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const cleanNo = receiptNumber.replace(/\//g, '-').replace(/\s+/g, '_');
+      a.download = `PowerConnect_Receipt_${cleanNo}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err: any) {
+      alert(err.message || 'Failed to download payment receipt PDF.');
+    } finally {
+      setDownloadingReceiptId(null);
+    }
+  };
+
+  // Razorpay Checkout Trigger Handler
+  const handleStartRazorpayPayment = async (bill: BillItem) => {
+    // Guard against rapid duplicate clicks or concurrent checkout openings
+    if (isProcessingPaymentRef.current || isProcessingPayment) {
+      return;
+    }
+
+    setPaymentError(null);
+    setPaymentSuccess(null);
+    const outstanding = bill.outstanding_amount_inr ?? bill.amount_inr;
+    const trimmed = paymentAmount.trim();
+
+    if (!trimmed) {
+      setPaymentError('Please enter a payment amount.');
+      return;
+    }
+
+    const numAmount = parseFloat(trimmed);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      setPaymentError('Payment amount must be greater than zero.');
+      return;
+    }
+    if (numAmount < 1.0) {
+      setPaymentError('Minimum payable amount is ₹1.00 (100 paise).');
+      return;
+    }
+    if (numAmount > outstanding) {
+      setPaymentError(`Entered amount (₹${numAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}) exceeds outstanding balance of ₹${outstanding.toLocaleString('en-IN', { minimumFractionDigits: 2 })}.`);
+      return;
+    }
+    const decimalParts = trimmed.split('.');
+    if (decimalParts.length > 1 && decimalParts[1].length > 2) {
+      setPaymentError('Payment amount cannot have more than 2 decimal places.');
+      return;
+    }
+
+    isProcessingPaymentRef.current = true;
+    setIsProcessingPayment(true);
+
+    const scriptLoaded = await loadRazorpayScript();
+    if (!scriptLoaded) {
+      isProcessingPaymentRef.current = false;
+      setIsProcessingPayment(false);
+      setPaymentError('Failed to load secure Razorpay checkout gateway. Please check your internet connection.');
+      return;
+    }
+
+    try {
+      // Safely close any previously open instance
+      if (rzpInstanceRef.current) {
+        try {
+          rzpInstanceRef.current.close();
+        } catch (_) {}
+        rzpInstanceRef.current = null;
+      }
+
+      // Generate stable idempotency key to prevent duplicate order creation on server
+      const idempotencyKey = `idem_${bill.id}_${Math.round(numAmount * 100)}`;
+      const orderData = await api.createPaymentOrder(bill.id, numAmount, idempotencyKey);
+
+      const options = {
+        key: orderData.key_id,
+        amount: orderData.amount_paise,
+        currency: orderData.currency,
+        name: 'PowerConnect Utilities',
+        description: `Electricity Statement #${orderData.bill_number}`,
+        order_id: orderData.order_id,
+        prefill: {
+          name: orderData.consumer_name,
+          email: orderData.consumer_email,
+          contact: orderData.consumer_phone
+            ? (orderData.consumer_phone.startsWith('+91')
+                ? orderData.consumer_phone
+                : `+91${orderData.consumer_phone.replace(/\D/g, '')}`)
+            : '+919876543210'
+        },
+        config: {
+          display: {
+            blocks: {
+              upi: {
+                name: 'Pay using UPI / QR',
+                instruments: [
+                  {
+                    method: 'upi',
+                    flows: ['qr', 'intent', 'collect']
+                  }
+                ]
+              }
+            },
+            sequence: ['block.upi'],
+            preferences: {
+              show_default_blocks: true
+            }
+          }
+        },
+        notes: {
+          bill_id: String(orderData.bill_id),
+          bill_number: orderData.bill_number,
+          receipt_number: orderData.receipt_number
+        },
+        theme: {
+          color: isDark ? '#2B59FF' : '#1D4ED8'
+        },
+        handler: async function (response: any) {
+          try {
+            const verifyPayload = {
+              bill_id: orderData.bill_id,
+              razorpay_order_id: response.razorpay_order_id || orderData.order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature
+            };
+            const verifyResult = await api.verifyPayment(verifyPayload);
+            setPaymentSuccess(verifyResult);
+            setPaymentAmount('');
+
+            // Refresh bills list
+            const freshBills = await api.getMyBills();
+            setBills(freshBills);
+
+            // Refresh transactions for this bill
+            const freshTxns = await api.getBillPayments(bill.id);
+            setBillTransactions(freshTxns);
+
+            // Refresh notifications
+            api.getNotifications().then(setNotifications).catch(() => {});
+          } catch (err: any) {
+            setPaymentError(err.message || 'Payment verification failed at server. Please contact billing support.');
+          } finally {
+            isProcessingPaymentRef.current = false;
+            setIsProcessingPayment(false);
+            rzpInstanceRef.current = null;
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            isProcessingPaymentRef.current = false;
+            setIsProcessingPayment(false);
+            rzpInstanceRef.current = null;
+          }
+        }
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzpInstanceRef.current = rzp;
+      rzp.on('payment.failed', function (resp: any) {
+        isProcessingPaymentRef.current = false;
+        setIsProcessingPayment(false);
+        rzpInstanceRef.current = null;
+        setPaymentError(resp.error?.description || 'Payment was declined or cancelled at checkout.');
+      });
+      rzp.open();
+    } catch (err: any) {
+      isProcessingPaymentRef.current = false;
+      setIsProcessingPayment(false);
+      rzpInstanceRef.current = null;
+      setPaymentError(err.message || 'Failed to create payment order with server.');
+    }
+  };
 
   // Computed usage statistics
   const usageStats = useMemo(() => {
@@ -239,7 +576,7 @@ export const ConsumerDashboard: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Brand & Portal Wordmark */}
           <PowerConnectBrand
-            descriptor="Electricity Theft Intelligence & Inspection Platform"
+            descriptor="Consumer Services & Billing Portal"
             badge="Consumer Portal"
             linkTo="/"
             size="md"
@@ -250,7 +587,7 @@ export const ConsumerDashboard: React.FC = () => {
             {/* Consumer Account Badge */}
             <div className="hidden sm:flex flex-col text-right pr-1">
               <span className="text-xs font-semibold">{profile?.name || user?.full_name || 'Consumer User'}</span>
-              <span className={`text-[11px] font-mono ${isDark ? 'text-[#9A9FA8]' : 'text-[#525866]'}`}>
+              <span className={`text-[11px] font-medium tabular-nums ${isDark ? 'text-[#9A9FA8]' : 'text-[#525866]'}`}>
                 {profile?.consumer_no ? `Acc: ${profile.consumer_no}` : 'Verified Account'}
               </span>
             </div>
@@ -401,7 +738,7 @@ export const ConsumerDashboard: React.FC = () => {
             <span>Service Requests</span>
             {issues.length > 0 && (
               <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-semibold tabular-nums ${
                   isDark ? 'bg-[#1E232B] text-[#8AA8FF]' : 'bg-slate-200 text-slate-700'
                 }`}
               >
@@ -462,7 +799,7 @@ export const ConsumerDashboard: React.FC = () => {
                     }`}
                   >
                     <span className={`block text-[11px] ${isDark ? 'text-[#6E737D]' : 'text-slate-500'}`}>Consumer ID</span>
-                    <strong className="font-mono">{profile?.consumer_no || 'N/A'}</strong>
+                    <strong className="tabular-nums font-semibold">{profile?.consumer_no || 'N/A'}</strong>
                   </div>
                   <div
                     className={`px-3 py-2 rounded-lg border ${
@@ -470,7 +807,7 @@ export const ConsumerDashboard: React.FC = () => {
                     }`}
                   >
                     <span className={`block text-[11px] ${isDark ? 'text-[#6E737D]' : 'text-slate-500'}`}>Smart Meter</span>
-                    <strong className="font-mono">{profile?.meter_number || 'SMART-001'}</strong>
+                    <strong className="tabular-nums font-semibold">{profile?.meter_number || 'SMART-001'}</strong>
                   </div>
                   <div
                     className={`px-3 py-2 rounded-lg border ${
@@ -483,28 +820,34 @@ export const ConsumerDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Technical Supply Specifications */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 text-xs">
-                <div>
-                  <span className={`block text-[11px] ${isDark ? 'text-[#6E737D]' : 'text-[#717784]'}`}>Sanctioned Load</span>
-                  <span className="font-semibold text-sm">{profile?.sanctioned_load_kw || 5.0} kW</span>
+              {/* Technical Supply Specifications (Collapsible Connection Details) */}
+              <details className="group pt-3 border-t border-inherit">
+                <summary className="flex items-center justify-between text-xs font-semibold cursor-pointer select-none text-slate-500 hover:text-slate-700 dark:text-[#9A9FA8] dark:hover:text-[#F3F4F5] transition-colors py-1">
+                  <span>Connection & Technical Specifications</span>
+                  <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180 text-slate-400" />
+                </summary>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-3 text-xs">
+                  <div>
+                    <span className={`block text-[11px] ${isDark ? 'text-[#6E737D]' : 'text-[#717784]'}`}>Sanctioned Load</span>
+                    <span className="font-semibold text-sm">{profile?.sanctioned_load_kw || 5.0} kW</span>
+                  </div>
+                  <div>
+                    <span className={`block text-[11px] ${isDark ? 'text-[#6E737D]' : 'text-[#717784]'}`}>Distribution Feeder</span>
+                    <span className="font-semibold text-sm">{profile?.feeder || 'Feeder-11'}</span>
+                  </div>
+                  <div>
+                    <span className={`block text-[11px] ${isDark ? 'text-[#6E737D]' : 'text-[#717784]'}`}>Substation Zone</span>
+                    <span className="font-semibold text-sm">{profile?.substation} • {profile?.zone}</span>
+                  </div>
+                  <div>
+                    <span className={`block text-[11px] ${isDark ? 'text-[#6E737D]' : 'text-[#717784]'}`}>Meter Infrastructure</span>
+                    <span className="font-semibold text-sm flex items-center gap-1 text-emerald-500 dark:text-emerald-400">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span>Bidirectional AMR</span>
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <span className={`block text-[11px] ${isDark ? 'text-[#6E737D]' : 'text-[#717784]'}`}>Distribution Feeder</span>
-                  <span className="font-semibold text-sm">{profile?.feeder || 'Feeder-11'}</span>
-                </div>
-                <div>
-                  <span className={`block text-[11px] ${isDark ? 'text-[#6E737D]' : 'text-[#717784]'}`}>Substation Zone</span>
-                  <span className="font-semibold text-sm">{profile?.substation} • {profile?.zone}</span>
-                </div>
-                <div>
-                  <span className={`block text-[11px] ${isDark ? 'text-[#6E737D]' : 'text-[#717784]'}`}>Data Transmission</span>
-                  <span className="font-semibold text-sm flex items-center gap-1 text-emerald-400">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>Bidirectional AMR</span>
-                  </span>
-                </div>
-              </div>
+              </details>
             </div>
 
             {/* 3 Core Information Cards (Answering Questions 2, 3, 4) */}
@@ -527,18 +870,25 @@ export const ConsumerDashboard: React.FC = () => {
                       className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
                         currentBill?.status === 'PAID'
                           ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                          : currentBill?.status === 'PARTIALLY_PAID'
+                          ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
                           : currentBill?.status === 'OVERDUE'
                           ? 'bg-red-500/10 text-red-400 border border-red-500/20'
                           : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                       }`}
                     >
-                      {currentBill?.status || 'NO ACTIVE BILL'}
+                      {currentBill?.status === 'PARTIALLY_PAID' ? 'PARTIALLY PAID' : (currentBill?.status || 'NO ACTIVE BILL')}
                     </span>
                   </div>
 
                   <div className="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1">
-                    ₹{currentBill ? currentBill.amount_inr.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00'}
+                    ₹{currentBill ? (currentBill.outstanding_amount_inr ?? currentBill.amount_inr).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00'}
                   </div>
+                  {currentBill && currentBill.paid_amount_inr !== undefined && currentBill.paid_amount_inr > 0 ? (
+                    <div className="text-[11px] text-emerald-400 mt-1 font-medium">
+                      ₹{currentBill.paid_amount_inr.toLocaleString('en-IN', { minimumFractionDigits: 2 })} settled of ₹{currentBill.amount_inr.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </div>
+                  ) : null}
 
                   <div className={`text-xs mt-3 space-y-1 ${isDark ? 'text-[#9A9FA8]' : 'text-[#525866]'}`}>
                     <div className="flex items-center gap-1.5">
@@ -553,14 +903,38 @@ export const ConsumerDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="pt-5 mt-4 border-t border-inherit">
+                <div className="pt-5 mt-4 border-t border-inherit flex items-center gap-2">
+                  {currentBill && (currentBill.outstanding_amount_inr ?? currentBill.amount_inr) > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedBillId(currentBill.id);
+                        setActiveTab('billing');
+                      }}
+                      className="flex-1 py-2 px-3 rounded-xl bg-[#2B59FF] hover:bg-[#1D4ED8] text-white text-xs font-bold shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <CreditCard className="w-3.5 h-3.5" />
+                      <span>Pay Now</span>
+                    </button>
+                  ) : (
+                    <div className="flex-1 text-xs text-emerald-500 dark:text-emerald-400 font-semibold flex items-center gap-1.5 py-1">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>All dues cleared</span>
+                    </div>
+                  )}
                   <button
                     type="button"
-                    onClick={() => setActiveTab('billing')}
-                    className="w-full inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-[#8AA8FF] hover:underline cursor-pointer"
+                    onClick={() => {
+                      if (currentBill) setSelectedBillId(currentBill.id);
+                      setActiveTab('billing');
+                    }}
+                    className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-colors cursor-pointer ${
+                      isDark
+                        ? 'border-[#292C32] bg-[#0B0C0E] hover:bg-[#1A1D21] text-[#9A9FA8] hover:text-[#F3F4F5]'
+                        : 'border-[#E2E5E9] bg-slate-50 hover:bg-slate-100 text-[#525866] hover:text-[#0F141C]'
+                    }`}
                   >
-                    <span>View Bill Breakdown & Payment Info</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
+                    <span>Breakdown</span>
                   </button>
                 </div>
               </div>
@@ -672,7 +1046,7 @@ export const ConsumerDashboard: React.FC = () => {
               {usage?.historical_daily_sample && usage.historical_daily_sample.length > 0 ? (
                 <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={usage.historical_daily_sample} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <AreaChart data={usage.historical_daily_sample} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                       <defs>
                         <linearGradient id="usageGradientPreview" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor={isDark ? '#8AA8FF' : '#2B59FF'} stopOpacity={0.35} />
@@ -688,6 +1062,7 @@ export const ConsumerDashboard: React.FC = () => {
                         interval={4}
                       />
                       <YAxis
+                        width={45}
                         stroke={isDark ? '#6E737D' : '#8C95A6'}
                         fontSize={10}
                         tickLine={false}
@@ -847,7 +1222,7 @@ export const ConsumerDashboard: React.FC = () => {
               {/* Full Width Area Chart */}
               <div className="h-80 w-full pt-2">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={usage?.historical_daily_sample || []} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                  <AreaChart data={usage?.historical_daily_sample || []} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                     <defs>
                       <linearGradient id="usageGradientFull" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor={isDark ? '#8AA8FF' : '#2B59FF'} stopOpacity={0.4} />
@@ -862,6 +1237,7 @@ export const ConsumerDashboard: React.FC = () => {
                       tickLine={false}
                     />
                     <YAxis
+                      width={45}
                       stroke={isDark ? '#6E737D' : '#8C95A6'}
                       fontSize={11}
                       tickLine={false}
@@ -890,23 +1266,20 @@ export const ConsumerDashboard: React.FC = () => {
                 </ResponsiveContainer>
               </div>
 
-              {/* Provenance & Institutional Guidance */}
+              {/* Energy Usage Guidance */}
               <div
-                className={`p-4 rounded-xl border text-xs leading-relaxed space-y-1.5 ${
+                className={`p-4 rounded-xl border text-xs leading-relaxed space-y-1 ${
                   isDark ? 'bg-[#0B0C0E] border-[#292C32] text-[#9A9FA8]' : 'bg-slate-50 border-slate-200 text-slate-600'
                 }`}
               >
                 <div className="flex items-center gap-2 font-semibold text-xs">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  <Zap className="w-4 h-4 text-blue-500" />
                   <span className={isDark ? 'text-[#F3F4F5]' : 'text-[#0F141C]'}>
-                    Understanding Your Smart Meter Interval Readings:
+                    Understanding Your Meter Readings:
                   </span>
                 </div>
                 <p>
-                  Readings are transmitted through smart digital meter interval registers calibrated in kilowatt-hours (kWh). Historical consumption trends help consumers identify seasonal surges, baseline standby loads, and peak energy periods. Internal utility vigilance metrics, predictive algorithms, and physical inspection scheduling remain strictly confidential to authorized utility squads.
-                </p>
-                <p className="text-[11px] text-[#6E737D]">
-                  Demonstration Dataset Provenance: Account consumption profiles reflect benchmark State Electricity Board interval sequences.
+                  Readings are recorded daily from your digital electronic meter in kilowatt-hours (kWh). Tracking your regular usage helps identify peak consumption hours, lower baseline standby load, and improve monthly energy efficiency.
                 </p>
               </div>
             </div>
@@ -946,11 +1319,11 @@ export const ConsumerDashboard: React.FC = () => {
                               isDark ? 'hover:bg-[#1A1D21]' : 'hover:bg-slate-50'
                             }`}
                           >
-                            <td className="py-3 px-4 font-mono font-medium">{entry.date}</td>
-                            <td className="py-3 px-4 font-semibold">{entry.kwh} kWh</td>
+                            <td className="py-3 px-4 font-medium tabular-nums">{entry.date}</td>
+                            <td className="py-3 px-4 font-semibold tabular-nums">{entry.kwh} kWh</td>
                             <td className="py-3 px-4">
-                              <span className={`inline-flex items-center gap-1 font-mono text-[11px] ${
-                                isHigh ? 'text-amber-400' : 'text-emerald-400'
+                              <span className={`inline-flex items-center gap-1 font-medium tabular-nums text-[11px] ${
+                                isHigh ? 'text-amber-500 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'
                               }`}>
                                 {isHigh ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                                 <span>{variance > 0 ? `+${variance.toFixed(1)}%` : `${variance.toFixed(1)}%`}</span>
@@ -971,103 +1344,462 @@ export const ConsumerDashboard: React.FC = () => {
         )}
 
         {/* =========================================================================
-            TAB 3: BILLS & PAYMENT INFO
+            TAB 3: BILLS & PAYMENT INFO (Razorpay Integration & Professional Invoices)
            ========================================================================= */}
         {activeTab === 'billing' && (
           <div className="space-y-6" data-tour="consumer-billing-section">
-            {/* Current Active Bill Highlight */}
-            {currentBill ? (
+            {/* Payment Success Alert */}
+            {paymentSuccess && (
+              <div
+                className={`p-5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all ${
+                  isDark ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300' : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-bold text-sm">Payment Verified & Settled Successfully</h4>
+                    <p className="text-xs mt-0.5 opacity-90">
+                      Payment of <strong>₹{paymentSuccess.amount_paid_inr.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong> recorded against Receipt <span className="tabular-nums font-semibold">{paymentSuccess.receipt_number}</span>.
+                      {paymentSuccess.is_fully_paid ? ' Your bill is now completely paid!' : ` Remaining outstanding balance: ₹${paymentSuccess.new_outstanding_inr.toLocaleString('en-IN', { minimumFractionDigits: 2 })}.`}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadReceiptPdf(paymentSuccess.payment_id, paymentSuccess.receipt_number)}
+                    disabled={downloadingReceiptId === paymentSuccess.payment_id}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    {downloadingReceiptId === paymentSuccess.payment_id ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Receipt className="w-3.5 h-3.5" />
+                    )}
+                    <span>Download Receipt PDF</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentSuccess(null)}
+                    className="p-1 rounded-md hover:bg-black/10 dark:hover:bg-white/10 text-xs opacity-70 hover:opacity-100 cursor-pointer"
+                    title="Dismiss"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Bills Loading Error Alert */}
+            {billsError && (
+              <div
+                className={`p-4 rounded-2xl border flex items-center justify-between gap-4 transition-all ${
+                  isDark ? 'bg-red-950/30 border-red-500/40 text-red-300' : 'bg-red-50 border-red-200 text-red-800'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+                  <div>
+                    <h4 className="font-bold text-xs">Error Loading Billing Statements</h4>
+                    <p className="text-[11px] opacity-90 mt-0.5">{billsError}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={reloadBills}
+                  className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold shrink-0 cursor-pointer transition-colors shadow-xs"
+                >
+                  Retry Loading
+                </button>
+              </div>
+            )}
+
+            {/* Requested Bill Missing / Stale Notification Alert */}
+            {isRequestedBillMissing && (
+              <div
+                className={`p-4 rounded-2xl border flex items-center justify-between gap-4 transition-all ${
+                  isDark ? 'bg-amber-950/30 border-amber-500/40 text-amber-300' : 'bg-amber-50 border-amber-200 text-amber-800'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
+                  <div>
+                    <h4 className="font-bold text-xs">Requested Bill Not Available</h4>
+                    <p className="text-[11px] opacity-90 mt-0.5">
+                      The bill referenced in your link or alert (Bill ID #{selectedBillId}) does not belong to this meter account or has been updated.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedBillId(null);
+                    setSearchParams({ tab: 'billing' });
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold shrink-0 cursor-pointer transition-colors shadow-xs"
+                >
+                  View Active Statement
+                </button>
+              </div>
+            )}
+
+            {/* Current Active / Selected Bill Card */}
+            {selectedBill ? (
               <div
                 className={`p-6 rounded-2xl border transition-colors ${
                   isDark ? 'bg-[#141619] border-[#292C32]' : 'bg-white border-[#E2E5E9] shadow-2xs'
                 }`}
               >
+                {/* Header: Bill Ref, Due Date & Download PDF Action */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-inherit">
                   <div>
-                    <span className="text-xs font-bold tracking-wider uppercase text-[#8AA8FF]">
-                      Active Electricity Statement
-                    </span>
-                    <h2 className="text-xl font-bold font-mono tracking-tight mt-1">
-                      {currentBill.bill_number}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold tracking-wider uppercase text-[#8AA8FF]">
+                        {selectedBill.id === bills[0]?.id ? 'Active Electricity Statement' : 'Statement Details'}
+                      </span>
+                      <span
+                        className={`inline-block text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                          selectedBill.status === 'PAID'
+                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                            : selectedBill.status === 'PARTIALLY_PAID'
+                            ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                            : selectedBill.status === 'OVERDUE'
+                            ? 'bg-red-500/10 text-red-400 border border-red-500/20'
+                            : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                        }`}
+                      >
+                        {selectedBill.status === 'PARTIALLY_PAID' ? 'PARTIALLY PAID' : selectedBill.status}
+                      </span>
+                    </div>
+                    <h2 className="text-2xl font-bold font-mono tracking-tight mt-1">
+                      {selectedBill.bill_number}
                     </h2>
                     <p className={`text-xs mt-0.5 ${isDark ? 'text-[#9A9FA8]' : 'text-[#525866]'}`}>
-                      Billing Period: {currentBill.billing_period_start} to {currentBill.billing_period_end}
+                      Billing Period: {selectedBill.billing_period_start} to {selectedBill.billing_period_end}
                     </p>
                   </div>
 
-                  <div className="sm:text-right">
-                    <span
-                      className={`inline-block text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-2 ${
-                        currentBill.status === 'PAID'
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                          : currentBill.status === 'OVERDUE'
-                          ? 'bg-red-500/10 text-red-400 border border-red-500/20'
-                          : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                      }`}
+                  <div className="flex flex-col sm:items-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadBillPdf(selectedBill.id, selectedBill.bill_number)}
+                      disabled={isDownloadingBillPdf}
+                      className={`inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                        isDark
+                          ? 'border-[#292C32] bg-[#0B0C0E] hover:bg-[#1A1D21] text-[#F3F4F5]'
+                          : 'border-[#E2E5E9] bg-slate-50 hover:bg-slate-100 text-[#0F141C] shadow-2xs'
+                      } disabled:opacity-50`}
+                      title="Download Official PDF Invoice"
                     >
-                      {currentBill.status}
+                      {isDownloadingBillPdf ? (
+                        <RefreshCw className="w-4 h-4 animate-spin text-[#8AA8FF]" />
+                      ) : (
+                        <Download className="w-4 h-4 text-[#8AA8FF]" />
+                      )}
+                      <span>Download PDF Bill</span>
+                    </button>
+                    <span className={`text-[11px] ${isDark ? 'text-[#6E737D]' : 'text-[#717784]'}`}>
+                      Payment Due Date: <strong className={isDark ? 'text-[#F3F4F5]' : 'text-[#0F141C]'}>{selectedBill.due_date}</strong>
                     </span>
-                    <div className="text-3xl font-extrabold text-[#2B59FF] dark:text-[#8AA8FF]">
-                      ₹{currentBill.amount_inr.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                    </div>
-                    <div className={`text-xs mt-1 ${isDark ? 'text-[#9A9FA8]' : 'text-[#525866]'}`}>
-                      Payment Due Date: <strong>{currentBill.due_date}</strong>
-                    </div>
                   </div>
                 </div>
 
-                {/* Bill Breakdown Columns */}
+                {/* Core Financial Accounting Breakdown */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 text-xs">
+                  {/* Metric 1: Original Bill Amount */}
                   <div
                     className={`p-4 rounded-xl border ${
                       isDark ? 'bg-[#0B0C0E] border-[#292C32]' : 'bg-slate-50 border-slate-200'
                     }`}
                   >
-                    <span className={isDark ? 'text-[#9A9FA8]' : 'text-[#525866]'}>Energy Consumed</span>
-                    <div className="text-base font-bold mt-1">{currentBill.units_consumed_kwh} kWh</div>
-                    <div className="text-[11px] text-[#6E737D] mt-0.5">Calculated from net meter recording</div>
-                  </div>
-
-                  <div
-                    className={`p-4 rounded-xl border ${
-                      isDark ? 'bg-[#0B0C0E] border-[#292C32]' : 'bg-slate-50 border-slate-200'
-                    }`}
-                  >
-                    <span className={isDark ? 'text-[#9A9FA8]' : 'text-[#525866]'}>Tariff Category</span>
-                    <div className="text-base font-bold mt-1">{profile?.tariff_category || 'DOMESTIC'}</div>
-                    <div className="text-[11px] text-[#6E737D] mt-0.5">Regulatory approved slab structure</div>
-                  </div>
-
-                  <div
-                    className={`p-4 rounded-xl border ${
-                      isDark ? 'bg-[#0B0C0E] border-[#292C32]' : 'bg-slate-50 border-slate-200'
-                    }`}
-                  >
-                    <span className={isDark ? 'text-[#9A9FA8]' : 'text-[#525866]'}>Receipt / Clearance Date</span>
-                    <div className="text-base font-bold mt-1">
-                      {currentBill.paid_at ? new Date(currentBill.paid_at).toLocaleDateString() : 'Pending Remittance'}
+                    <span className={isDark ? 'text-[#9A9FA8]' : 'text-[#525866]'}>Original Bill Amount</span>
+                    <div className="text-xl font-bold tabular-nums mt-1">
+                      ₹{selectedBill.amount_inr.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </div>
-                    <div className="text-[11px] text-[#6E737D] mt-0.5">Recorded in utility billing ledger</div>
+                    <div className="text-[11px] text-[#6E737D] mt-0.5">Energy charge + regulatory tariff</div>
+                  </div>
+
+                  {/* Metric 2: Paid to Date */}
+                  <div
+                    className={`p-4 rounded-xl border ${
+                      isDark ? 'bg-[#0B0C0E] border-[#292C32]' : 'bg-slate-50 border-slate-200'
+                    }`}
+                  >
+                    <span className={isDark ? 'text-[#9A9FA8]' : 'text-[#525866]'}>Total Settled to Date</span>
+                    <div className="text-xl font-bold tabular-nums mt-1 text-emerald-600 dark:text-emerald-400">
+                      ₹{(selectedBill.paid_amount_inr || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </div>
+                    <div className="text-[11px] text-[#6E737D] mt-0.5">Verified gateway remittances</div>
+                  </div>
+
+                  {/* Metric 3: Remaining Amount Due */}
+                  <div
+                    className={`p-4 rounded-xl border ${
+                      (selectedBill.outstanding_amount_inr ?? selectedBill.amount_inr) > 0
+                        ? isDark
+                          ? 'bg-amber-950/20 border-amber-500/30 text-amber-300'
+                          : 'bg-amber-50/70 border-amber-200 text-amber-900'
+                        : isDark
+                        ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300'
+                        : 'bg-emerald-50/70 border-emerald-200 text-emerald-900'
+                    }`}
+                  >
+                    <span className="font-semibold text-[11px]">Outstanding Balance Due</span>
+                    <div className="text-2xl font-extrabold tabular-nums mt-1">
+                      ₹{(selectedBill.outstanding_amount_inr ?? selectedBill.amount_inr).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </div>
+                    <div className="text-[11px] opacity-80 mt-0.5">
+                      {(selectedBill.outstanding_amount_inr ?? selectedBill.amount_inr) <= 0
+                        ? 'Account fully reconciled'
+                        : `Payable by ${selectedBill.due_date}`}
+                    </div>
                   </div>
                 </div>
 
-                {/* Official Remittance Channels */}
-                <div
-                  className={`mt-6 p-4 rounded-xl border text-xs space-y-2 ${
-                    isDark ? 'bg-[#0B0C0E] border-[#292C32] text-[#9A9FA8]' : 'bg-slate-50 border-slate-200 text-slate-600'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 font-bold text-xs text-[#8AA8FF]">
-                    <CreditCard className="w-4 h-4" />
-                    <span>Official Electricity Board Payment Channels</span>
+                {/* Partial Payment Terminal or Fully Settled Notice */}
+                {(selectedBill.outstanding_amount_inr ?? selectedBill.amount_inr) > 0 ? (
+                  <div
+                    className={`mt-6 p-5 rounded-2xl border space-y-4 ${
+                      isDark ? 'bg-[#0B0C0E] border-[#292C32]' : 'bg-slate-50 border-slate-200'
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <h3 className="text-sm font-bold flex items-center gap-2">
+                          <CreditCard className="w-4 h-4 text-[#8AA8FF]" />
+                          <span>Flexible Bill Payment (Partial or Full)</span>
+                        </h3>
+                        <p className={`text-xs mt-0.5 ${isDark ? 'text-[#9A9FA8]' : 'text-[#525866]'}`}>
+                          You may pay the full balance or enter any smaller partial amount (minimum ₹1.00). Secured by Razorpay Standard Checkout.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20 shrink-0">
+                        <Lock className="w-3 h-3" />
+                        <span>256-Bit SSL Encrypted</span>
+                      </div>
+                    </div>
+
+                    {/* Amount Input & Quick Shortcuts */}
+                    <div className="space-y-3">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                        <div className="relative flex-1">
+                          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
+                            ₹
+                          </span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="1.00"
+                            max={selectedBill.outstanding_amount_inr ?? selectedBill.amount_inr}
+                            placeholder={`e.g. ${(selectedBill.outstanding_amount_inr ?? selectedBill.amount_inr).toFixed(2)}`}
+                            value={paymentAmount}
+                            onChange={(e) => {
+                              setPaymentAmount(e.target.value);
+                              setPaymentError(null);
+                            }}
+                            className={`w-full pl-8 pr-4 py-2.5 rounded-xl border text-sm font-semibold tabular-nums transition-all outline-hidden ${
+                              isDark
+                                ? 'bg-[#141619] border-[#292C32] text-[#F3F4F5] focus:border-[#8AA8FF] focus:ring-1 focus:ring-[#8AA8FF]'
+                                : 'bg-white border-[#E2E5E9] text-[#0F141C] focus:border-[#2B59FF] focus:ring-1 focus:ring-[#2B59FF]'
+                            }`}
+                          />
+                        </div>
+
+                        {/* Pay with Razorpay Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleStartRazorpayPayment(selectedBill)}
+                          disabled={isProcessingPayment}
+                          className="px-5 py-2.5 rounded-xl bg-[#2B59FF] hover:bg-[#1D4ED8] text-white text-xs font-bold shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2 shrink-0 disabled:opacity-50"
+                        >
+                          {isProcessingPayment ? (
+                            <>
+                              <RefreshCw className="w-4 h-4 animate-spin" />
+                              <span>Opening Razorpay Checkout...</span>
+                            </>
+                          ) : (
+                            <>
+                              <CreditCard className="w-4 h-4" />
+                              <span>
+                                Pay {paymentAmount && !isNaN(parseFloat(paymentAmount)) && parseFloat(paymentAmount) > 0 ? `₹${parseFloat(paymentAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : 'with Razorpay'}
+                              </span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Quick Amount Selection Shortcuts */}
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className={`text-[11px] font-medium mr-1 ${isDark ? 'text-[#6E737D]' : 'text-[#717784]'}`}>
+                          Quick Shortcuts:
+                        </span>
+                        {/* Full Payment Button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPaymentAmount(String(selectedBill.outstanding_amount_inr ?? selectedBill.amount_inr));
+                            setPaymentError(null);
+                          }}
+                          className={`px-2.5 py-1 rounded-lg border font-medium tabular-nums transition-colors cursor-pointer ${
+                            isDark
+                              ? 'border-[#292C32] bg-[#141619] hover:bg-[#1A1D21] text-[#8AA8FF]'
+                              : 'border-[#E2E5E9] bg-white hover:bg-slate-100 text-[#2B59FF]'
+                          }`}
+                        >
+                          Pay Full (₹{(selectedBill.outstanding_amount_inr ?? selectedBill.amount_inr).toLocaleString('en-IN', { minimumFractionDigits: 2 })})
+                        </button>
+                        {/* ₹100 Partial Shortcut */}
+                        {(selectedBill.outstanding_amount_inr ?? selectedBill.amount_inr) >= 100 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPaymentAmount('100.00');
+                              setPaymentError(null);
+                            }}
+                            className={`px-2.5 py-1 rounded-lg border font-medium tabular-nums transition-colors cursor-pointer ${
+                              isDark
+                                ? 'border-[#292C32] bg-[#141619] hover:bg-[#1A1D21] text-[#F3F4F5]'
+                                : 'border-[#E2E5E9] bg-white hover:bg-slate-100 text-[#0F141C]'
+                            }`}
+                          >
+                            ₹100
+                          </button>
+                        )}
+                        {/* ₹500 Partial Shortcut */}
+                        {(selectedBill.outstanding_amount_inr ?? selectedBill.amount_inr) >= 500 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPaymentAmount('500.00');
+                              setPaymentError(null);
+                            }}
+                            className={`px-2.5 py-1 rounded-lg border font-medium tabular-nums transition-colors cursor-pointer ${
+                              isDark
+                                ? 'border-[#292C32] bg-[#141619] hover:bg-[#1A1D21] text-[#F3F4F5]'
+                                : 'border-[#E2E5E9] bg-white hover:bg-slate-100 text-[#0F141C]'
+                            }`}
+                          >
+                            ₹500
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Error Message */}
+                      {paymentError && (
+                        <div
+                          className="p-3 rounded-xl border text-xs flex items-center gap-2 bg-red-500/10 border-red-500/30 text-red-400"
+                          role="alert"
+                        >
+                          <AlertCircle className="w-4 h-4 shrink-0" />
+                          <span>{paymentError}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <p className="leading-relaxed">
-                    Electricity dues may be remitted through official utility-authorized payment counters, designated nationalized bank branches, and certified Bharat Bill Payment System (BBPS) providers using your 12-digit Consumer ID.
-                  </p>
-                  <p className="text-[11px] text-[#6E737D]">
-                    Note: Direct credit card simulation is disabled on this informational portal to protect transaction integrity.
-                  </p>
-                </div>
+                ) : (
+                  <div className="mt-6 p-4 rounded-xl border flex items-center justify-between gap-3 bg-emerald-500/10 border-emerald-500/30 text-emerald-400">
+                    <div className="flex items-center gap-2 text-xs font-semibold">
+                      <CheckCircle2 className="w-4 h-4 shrink-0" />
+                      <span>This electricity statement has been completely settled. No outstanding payment is due.</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadBillPdf(selectedBill.id, selectedBill.bill_number)}
+                      className="text-xs underline hover:no-underline font-bold text-emerald-300 cursor-pointer"
+                    >
+                      Download Settled Statement PDF
+                    </button>
+                  </div>
+                )}
+
+                {/* Compact Expandable Payment Receipts & Remittance History */}
+                {billTransactions.length > 0 && (
+                  <details className="mt-6 border border-slate-200 dark:border-[#292C32] rounded-xl overflow-hidden group">
+                    <summary className="p-3.5 sm:p-4 flex items-center justify-between cursor-pointer bg-slate-50/70 dark:bg-[#181B1F] hover:bg-slate-100/70 dark:hover:bg-[#1E2227] transition-colors select-none">
+                      <div className="flex items-center gap-2.5">
+                        <Receipt className="w-4 h-4 text-blue-600 dark:text-[#8AA8FF]" />
+                        <span className="text-xs font-bold text-slate-800 dark:text-[#F3F4F5]">
+                          Payment Receipts & Remittance History
+                        </span>
+                        <span className="text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-[#8AA8FF] border border-blue-200 dark:border-blue-900/40">
+                          {billTransactions.length} {billTransactions.length === 1 ? 'record' : 'records'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-[#9A9FA8]">
+                        <span className="text-[11px] group-open:hidden">View receipts</span>
+                        <span className="text-[11px] hidden group-open:inline">Hide receipts</span>
+                        <ChevronDown className="w-4 h-4 transition-transform duration-200 group-open:rotate-180" />
+                      </div>
+                    </summary>
+
+                    <div className="p-3 sm:p-4 border-t border-slate-200 dark:border-[#292C32] bg-white dark:bg-[#141619] overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead className={isDark ? 'bg-[#0B0C0E] text-[#9A9FA8]' : 'bg-slate-50 text-[#525866]'}>
+                          <tr>
+                            <th className="py-2.5 px-3 font-semibold">Receipt Number</th>
+                            <th className="py-2.5 px-3 font-semibold">Amount</th>
+                            <th className="py-2.5 px-3 font-semibold">Payment Mode</th>
+                            <th className="py-2.5 px-3 font-semibold">Date & Time</th>
+                            <th className="py-2.5 px-3 font-semibold">Status</th>
+                            <th className="py-2.5 px-3 font-semibold text-right">Official Receipt</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-[#202328]">
+                          {billTransactions.map((t) => (
+                            <tr
+                              key={t.id}
+                              className={`transition-colors ${
+                                isDark ? 'hover:bg-[#1A1D21]' : 'hover:bg-slate-50'
+                              }`}
+                            >
+                              <td className="py-2.5 px-3 font-mono font-medium">{t.receipt_number}</td>
+                              <td className="py-2.5 px-3 font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                                ₹{t.amount_inr.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                              </td>
+                              <td className="py-2.5 px-3 capitalize text-[#6E737D]">{t.payment_method || 'Online / NetBanking'}</td>
+                              <td className="py-2.5 px-3 text-[#6E737D] tabular-nums">
+                                {t.verified_at ? new Date(t.verified_at).toLocaleString() : new Date(t.created_at).toLocaleString()}
+                              </td>
+                              <td className="py-2.5 px-3">
+                                <span
+                                  className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                                    t.status === 'SUCCESS'
+                                      ? 'bg-emerald-500/10 text-emerald-400'
+                                      : t.status === 'FAILED'
+                                      ? 'bg-red-500/10 text-red-400'
+                                      : 'bg-amber-500/10 text-amber-400'
+                                  }`}
+                                >
+                                  {t.status}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-right">
+                                {t.status === 'SUCCESS' ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDownloadReceiptPdf(t.id, t.receipt_number)}
+                                    disabled={downloadingReceiptId === t.id}
+                                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-[#8AA8FF] hover:underline cursor-pointer disabled:opacity-50"
+                                  >
+                                    {downloadingReceiptId === t.id ? (
+                                      <RefreshCw className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                      <Receipt className="w-3 h-3" />
+                                    )}
+                                    <span>Download PDF</span>
+                                  </button>
+                                ) : (
+                                  <span className="text-[11px] text-[#6E737D]">—</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </details>
+                )}
               </div>
             ) : (
               <div
@@ -1076,22 +1808,30 @@ export const ConsumerDashboard: React.FC = () => {
                 }`}
               >
                 <FileText className="w-8 h-8 text-[#9A9FA8] mx-auto mb-2" />
-                <h3 className="font-semibold text-sm">No Active Bill Available</h3>
-                <p className="text-xs text-[#6E737D] mt-1">Your meter is current for this billing cycle.</p>
+                <h3 className="font-semibold text-sm">
+                  {bills.length === 0 ? 'No Bills Issued Yet' : 'No Active Bill Selected'}
+                </h3>
+                <p className="text-xs text-[#6E737D] mt-1">
+                  {bills.length === 0
+                    ? 'No bills have been issued for this account. Your meter account is current.'
+                    : 'Select any statement from the ledger below to review breakdown, pay balance, or download official PDF.'}
+                </p>
               </div>
             )}
 
-            {/* Past Invoices Table */}
+            {/* Past Invoices & Statements Table */}
             <div
               className={`rounded-2xl border overflow-hidden transition-colors ${
                 isDark ? 'bg-[#141619] border-[#292C32]' : 'bg-white border-[#E2E5E9] shadow-2xs'
               }`}
             >
-              <div className="p-5 border-b border-inherit">
-                <h3 className="text-sm font-bold tracking-tight">Billing & Statement History</h3>
-                <p className={`text-xs ${isDark ? 'text-[#9A9FA8]' : 'text-[#525866]'}`}>
-                  Historical utility statements issued to this consumer account
-                </p>
+              <div className="p-5 border-b border-inherit flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold tracking-tight">Billing & Statement Ledger</h3>
+                  <p className={`text-xs ${isDark ? 'text-[#9A9FA8]' : 'text-[#525866]'}`}>
+                    Historical electricity statements issued to this consumer account
+                  </p>
+                </div>
               </div>
 
               <div className="overflow-x-auto">
@@ -1102,42 +1842,110 @@ export const ConsumerDashboard: React.FC = () => {
                       <th className="py-3 px-4 font-semibold">Billing Period</th>
                       <th className="py-3 px-4 font-semibold">Units (kWh)</th>
                       <th className="py-3 px-4 font-semibold">Amount (₹)</th>
+                      <th className="py-3 px-4 font-semibold">Paid (₹)</th>
+                      <th className="py-3 px-4 font-semibold">Balance Due (₹)</th>
                       <th className="py-3 px-4 font-semibold">Due Date</th>
                       <th className="py-3 px-4 font-semibold">Status</th>
+                      <th className="py-3 px-4 font-semibold text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-inherit">
-                    {bills.map((b) => (
-                      <tr
-                        key={b.id}
-                        className={`transition-colors ${
-                          isDark ? 'hover:bg-[#1A1D21]' : 'hover:bg-slate-50'
-                        }`}
-                      >
-                        <td className="py-3 px-4 font-mono font-semibold">{b.bill_number}</td>
-                        <td className="py-3 px-4 text-[#6E737D]">
-                          {b.billing_period_start} – {b.billing_period_end}
-                        </td>
-                        <td className="py-3 px-4 font-medium">{b.units_consumed_kwh}</td>
-                        <td className="py-3 px-4 font-bold">
-                          ₹{b.amount_inr.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                        </td>
-                        <td className="py-3 px-4">{b.due_date}</td>
-                        <td className="py-3 px-4">
-                          <span
-                            className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
-                              b.status === 'PAID'
-                                ? 'bg-emerald-500/10 text-emerald-400'
-                                : b.status === 'OVERDUE'
-                                ? 'bg-red-500/10 text-red-400'
-                                : 'bg-amber-500/10 text-amber-400'
-                            }`}
-                          >
-                            {b.status}
-                          </span>
+                    {bills.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="py-8 text-center text-slate-400 text-xs">
+                          {billsError ? 'Unable to load bills due to a server connection issue.' : 'No bills have been issued for this account.'}
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      bills.map((b) => {
+                        const outstanding = b.outstanding_amount_inr ?? (b.status === 'PAID' ? 0 : b.amount_inr);
+                        const isSelected = selectedBill?.id === b.id;
+                        return (
+                          <tr
+                            key={b.id}
+                            onClick={() => {
+                              setSelectedBillId(b.id);
+                              setSearchParams({ tab: 'billing', bill_id: String(b.id) });
+                            }}
+                            className={`cursor-pointer transition-colors ${
+                              isSelected
+                                ? isDark ? 'bg-[#1A1D21]/80 ring-1 ring-inset ring-indigo-500/30' : 'bg-blue-50/70 ring-1 ring-inset ring-blue-500/30'
+                                : isDark ? 'hover:bg-[#1A1D21]' : 'hover:bg-slate-50'
+                            }`}
+                          >
+                            <td className="py-3 px-4 font-mono font-semibold">{b.bill_number}</td>
+                            <td className="py-3 px-4 text-[#6E737D]">
+                              {b.billing_period_start} – {b.billing_period_end}
+                            </td>
+                            <td className="py-3 px-4 font-medium">{b.units_consumed_kwh}</td>
+                            <td className="py-3 px-4 font-bold">
+                              ₹{b.amount_inr.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className="py-3 px-4 tabular-nums text-emerald-600 dark:text-emerald-400 font-medium">
+                              ₹{(b.paid_amount_inr || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className="py-3 px-4 tabular-nums font-bold">
+                              ₹{outstanding.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className="py-3 px-4">{b.due_date}</td>
+                            <td className="py-3 px-4">
+                              <span
+                                className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                                  b.status === 'PAID'
+                                    ? 'bg-emerald-500/10 text-emerald-400'
+                                    : b.status === 'PARTIALLY_PAID'
+                                    ? 'bg-blue-500/10 text-blue-400'
+                                    : b.status === 'OVERDUE'
+                                    ? 'bg-red-500/10 text-red-400'
+                                    : 'bg-amber-500/10 text-amber-400'
+                                }`}
+                              >
+                                {b.status === 'PARTIALLY_PAID' ? 'PARTIALLY PAID' : b.status}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedBillId(b.id);
+                                    setSearchParams({ tab: 'billing', bill_id: String(b.id) });
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                  }}
+                                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-400 hover:underline cursor-pointer"
+                                  title="View Statement Details"
+                                >
+                                  <span>View</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDownloadBillPdf(b.id, b.bill_number)}
+                                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#8AA8FF] hover:underline cursor-pointer"
+                                  title="Download PDF Statement"
+                                >
+                                  <Download className="w-3 h-3" />
+                                  <span>PDF</span>
+                                </button>
+                                {outstanding > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedBillId(b.id);
+                                      setSearchParams({ tab: 'billing', bill_id: String(b.id) });
+                                      setPaymentAmount(String(outstanding));
+                                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    }}
+                                    className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-md bg-[#2B59FF] hover:bg-[#1D4ED8] text-white transition-colors cursor-pointer"
+                                  >
+                                    <span>Pay</span>
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -1277,7 +2085,7 @@ export const ConsumerDashboard: React.FC = () => {
                     Track resolution status and official utility board feedback notes
                   </p>
                 </div>
-                <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded-full bg-[#8AA8FF]/10 text-[#8AA8FF]">
+                <span className="text-xs font-semibold tabular-nums px-2 py-0.5 rounded-full bg-[#8AA8FF]/10 text-[#8AA8FF]">
                   {issues.length} Recorded
                 </span>
               </div>

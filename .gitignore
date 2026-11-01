@@ -5,6 +5,8 @@
 *.pem
 credentials
 secrets
+razorpay_*.csv
+*.csv
 
 # Python
 __pycache__/
